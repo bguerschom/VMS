@@ -1,0 +1,43 @@
+
+-- Project File Structure
+src/
+├── assets/
+│   ├── icons/
+│   └── images/
+├── components/
+│   ├── common/
+│   │   ├── Button.jsx
+│   │   ├── Input.jsx
+│   │   ├── Select.jsx
+│   │   ├── Card.jsx
+│   │   └── Modal.jsx
+│   ├── layout/
+│   │   ├── Header.jsx
+│   │   ├── Sidebar.jsx
+│   │   └── Footer.jsx
+│   └── features/
+│       ├── auth/
+│       ├── visitors/
+│       └── reports/
+├── config/
+│   └── supabase.js
+├── hooks/
+│   ├── useAuth.js
+│   └── useVisitor.js
+├── pages/
+│   ├── auth/
+│   │   ├── Login.jsx
+│   │   └── Register.jsx
+│   ├── dashboard/
+│   │   └── Dashboard.jsx
+│   ├── visitors/
+│   │   ├── CheckIn.jsx
+│   │   └── CheckOut.jsx
+│   └── reports/
+│       └── VisitorReport.jsx
+├── utils/
+│   ├── format.js
+│   └── validation.js
+├── styles/
+│   └── globals.css
+└── App.jsx
