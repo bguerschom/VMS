@@ -14,7 +14,7 @@ import {
 import * as XLSX from 'xlsx';
 import { supabase } from '../../config/supabase';
 import { useAuth } from '../../hooks/useAuth';
-import  useRoleCheck  from '../../hooks/useRoleCheck';
+import  useRoleAccess  from '../../hooks/useRoleCheck';
 
 // User Modal Component for Create/Edit
 const UserModal = ({ isOpen, mode, user, onClose, onSubmit }) => {
