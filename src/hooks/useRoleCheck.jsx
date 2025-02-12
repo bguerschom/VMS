@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from './useAuth';
 import { roleBasedNavigation } from '../components/layout/navigationConfig';
 
-const useRoleAccess = (pagePath) => {
+export const useRoleAccess = (pagePath) => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -44,6 +44,3 @@ const useRoleAccess = (pagePath) => {
     checkAccess();
   }, [user, pagePath, navigate]);
 };
-
-
-export default useRoleCheck;
