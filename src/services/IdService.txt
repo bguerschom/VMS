@@ -1,0 +1,59 @@
+NOTE to IDService
+
+To integrate the real ID API, you'll need to:
+
+#Update your environment variables:
+REACT_APP_NATIONAL_ID_API_URL=https://api.national-id.gov.rw  # Replace with actual URL
+REACT_APP_NATIONAL_ID_API_KEY=your_api_key_here
+
+
+
+
+#Modify the visitorService.js to use the real API:
+
+import { nationalIdService } from './nationalIdService';
+
+// Replace mockIdApi.searchPerson with:
+const apiResponse = await nationalIdService.verifyPerson(searchTerm);
+
+// Replace mockIdApi.getPhoto with:
+const photoUrl = await nationalIdService.getPhoto(identityNumber);
+
+
+
+
+#Handle additional data from the real API:
+-Update your database schema if the real API provides additional fields you want to store
+-Adjust the data transformation in the service layer to match the real API response format
+-Add error handling for specific API error codes or messages
+
+
+#Security considerations
+// Add API key to your secure configuration
+const API_KEY = process.env.REACT_APP_NATIONAL_ID_API_KEY;
+
+// Add error handling for API rate limits
+if (response.status === 429) {
+  throw new Error('Rate limit exceeded');
+}
+
+// Add SSL certificate verification
+const response = await fetch(url, {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${API_KEY}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify(data)
+});
+
+
+#Update your error messages to match API responses:
+
+const ERROR_MESSAGES = {
+  INVALID_ID: 'Invalid ID number format',
+  ID_NOT_FOUND: 'ID not found in national database',
+  API_ERROR: 'Unable to verify ID at this time',
+  // Add more specific error messages based on API responses
+};
+
