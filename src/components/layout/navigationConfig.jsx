@@ -43,6 +43,16 @@ export const roleBasedNavigation = {
         { name: 'Scheduled Visitor Report', path: '/scheduled-report', icon: BarChart },
       ]
     },
+    { 
+      name: 'Other Users Dashboard', 
+      icon: LayoutDashboard,
+      children: [
+        { name: 'Manager Dashboard', path: '/managerdashboard', icon: LayoutDashboard },
+        { name: 'User Dashboard', path: '/userdashboard', icon: LayoutDashboard },
+        { name: 'Supervisor Dashboard', path: '/supervisordashboard', icon: LayoutDashboard },
+        { name: 'Security Guard Dashboard', path: '/securityguarddashboard', icon: LayoutDashboard },
+      ]
+    },
   ],
     manager: [
     { 
