@@ -32,7 +32,7 @@ const LOCATION_GROUPS = {
 };
 
 const GuardShiftReport = () => {
-  useRoleAccess('/GuardShiftReport');
+
   const { 
     formData, 
     loading, 
