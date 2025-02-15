@@ -75,10 +75,10 @@ const App = () => {
 
       {/* Dashboard routes */}
       <Route path="/admindashboard" element={<ProtectedRoute requiredRoles={['admin']}><AuthenticatedLayout><AdminDashboard /></AuthenticatedLayout></ProtectedRoute>} />
-      <Route path="/securityguarddashboard" element={<ProtectedRoute requiredRoles={['security_guard']}><AuthenticatedLayout><SecurityGuardDashboard /></AuthenticatedLayout></ProtectedRoute>} />
-      <Route path="/supervisordashboard" element={<ProtectedRoute requiredRoles={['supervisor']}><AuthenticatedLayout><SupervisorDashboard /></AuthenticatedLayout></ProtectedRoute>} />
-      <Route path="/userdashboard" element={<ProtectedRoute requiredRoles={['user']}><AuthenticatedLayout><UserDashboard /></AuthenticatedLayout></ProtectedRoute>} />
-      <Route path="/managerdashboard" element={<ProtectedRoute requiredRoles={['manager']}><AuthenticatedLayout><ManagerDashboard /></AuthenticatedLayout></ProtectedRoute>} />
+      <Route path="/securityguarddashboard" element={<ProtectedRoute requiredRoles={['admin','security_guard']}><AuthenticatedLayout><SecurityGuardDashboard /></AuthenticatedLayout></ProtectedRoute>} />
+      <Route path="/supervisordashboard" element={<ProtectedRoute requiredRoles={['admin','supervisor']}><AuthenticatedLayout><SupervisorDashboard /></AuthenticatedLayout></ProtectedRoute>} />
+      <Route path="/userdashboard" element={<ProtectedRoute requiredRoles={['admin','user']}><AuthenticatedLayout><UserDashboard /></AuthenticatedLayout></ProtectedRoute>} />
+      <Route path="/managerdashboard" element={<ProtectedRoute requiredRoles={['admin','manager']}><AuthenticatedLayout><ManagerDashboard /></AuthenticatedLayout></ProtectedRoute>} />
 
       {/* Check-in routes */}
       <Route path="/check-in" element={<ProtectedRoute requiredRoles={['admin', 'security_guard']}><AuthenticatedLayout><SearchVisitor /></AuthenticatedLayout></ProtectedRoute>} />
