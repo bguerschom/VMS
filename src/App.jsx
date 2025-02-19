@@ -89,8 +89,8 @@ const App = () => {
       <Route path="/check-out/form" element={<ProtectedRoute requiredRoles={['admin', 'security_guard']}><AuthenticatedLayout><CheckoutModal /></AuthenticatedLayout></ProtectedRoute>} />
 
       {/* Visitor history routes */}
-      <Route path="/visitor-history" element={<ProtectedRoute requiredRoles={['admin', 'supervisor', 'manager', 'user']}><AuthenticatedLayout><VisitorHistory /></AuthenticatedLayout></ProtectedRoute>} />
-      <Route path="/visitor-history/form" element={<ProtectedRoute requiredRoles={['admin', 'supervisor', 'manager', 'user']}><AuthenticatedLayout><VisitorDetailsModal /></AuthenticatedLayout></ProtectedRoute>} />
+      <Route path="/visitor-history" element={<ProtectedRoute requiredRoles={['admin', 'supervisor', 'manager', 'user', 'security_guard']}><AuthenticatedLayout><VisitorHistory /></AuthenticatedLayout></ProtectedRoute>} />
+      <Route path="/visitor-history/form" element={<ProtectedRoute requiredRoles={['admin', 'supervisor', 'manager', 'user', 'security_guard']}><AuthenticatedLayout><VisitorDetailsModal /></AuthenticatedLayout></ProtectedRoute>} />
 
       {/* Bulk visitors route */}
       <Route path="/bulkvisitors" element={<ProtectedRoute requiredRoles={['admin']}><AuthenticatedLayout><BulkVisitorUpload /></AuthenticatedLayout></ProtectedRoute>} />
