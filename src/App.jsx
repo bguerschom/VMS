@@ -102,7 +102,7 @@ const App = () => {
       <Route path="/user-management" element={<ProtectedRoute requiredRoles={['admin']}><AuthenticatedLayout><UserManagement /></AuthenticatedLayout></ProtectedRoute>} />
 
       {/* Reports routes */}
-      <Route path="/GuardShiftReport" element={<ProtectedRoute requiredRoles={['admin', 'security_guard']}><AuthenticatedLayout><GuardShiftReport /></AuthenticatedLayout></ProtectedRoute>} />
+      <Route path="/GuardShiftReport" element={<ProtectedRoute requiredRoles={['admin', 'security_guard', 'supervisor']}><AuthenticatedLayout><GuardShiftReport /></AuthenticatedLayout></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute requiredRoles={['admin', 'supervisor', 'manager']}><AuthenticatedLayout><CheckInOutReport /></AuthenticatedLayout></ProtectedRoute>} />
       <Route path="/GuardShiftReportViewer" element={<ProtectedRoute requiredRoles={['admin', 'supervisor']}><AuthenticatedLayout><GuardShiftReportViewer /></AuthenticatedLayout></ProtectedRoute>} />
       <Route path="/scheduled-report" element={<ProtectedRoute requiredRoles={['admin', 'supervisor', 'manager']}><AuthenticatedLayout><ScheduledVisitorsReport /></AuthenticatedLayout></ProtectedRoute>} />
