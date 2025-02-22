@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, X } from 'lucide-react';
+import { Camera, X, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { visitorService } from '../services/visitorService';
 
@@ -7,6 +7,7 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
   const [stream, setStream] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
+  const [capturedImage, setCapturedImage] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -18,8 +19,8 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
         mediaStream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: 'environment',
-            width: { ideal: 2048 }, // Higher resolution
-            height: { ideal: 1536 }
+            width: { ideal: 3840 }, // 4K resolution
+            height: { ideal: 2160 }
           }
         });
         
@@ -57,6 +58,7 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
       setStream(null);
     }
     setError(null);
+    setCapturedImage(null);
     onClose();
   };
 
@@ -65,15 +67,22 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
       setIsProcessing(true);
       setError(null);
       
-      console.log('Starting OCR process...');
-      const extractedText = await visitorService.extractTextFromImage(photoData);
-      console.log('OCR completed. Processing text...');
+      console.log('Starting OCR processing...');
       
-      const documentData = visitorService.parseDocumentText(extractedText);
-      console.log('Document data parsed:', documentData);
+      // First attempt
+      let extractedText = await visitorService.extractTextFromImage(photoData);
+      let documentData = visitorService.parseDocumentText(extractedText);
+      
+      // If we're missing critical data, try processing again with different settings
+      if (!documentData.fullName || !documentData.identityNumber || !documentData.gender) {
+        console.log('First attempt incomplete, trying with enhanced settings...');
+        extractedText = await visitorService.extractTextFromImage(photoData, true); // Enhanced mode
+        documentData = visitorService.parseDocumentText(extractedText);
+      }
 
-      if (!documentData.fullName && !documentData.identityNumber) {
-        setError('Could not read the document clearly. Please try again with better lighting.');
+      // Validate the extracted data
+      if (!documentData.fullName || !documentData.identityNumber || !documentData.gender) {
+        setError('Could not read all required information. Please try again with better lighting and alignment.');
         return false;
       }
 
@@ -105,19 +114,25 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
       // Clear canvas and draw new image
       context.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Basic image processing for better OCR
-      context.filter = 'contrast(1.2) brightness(1.1)';
+      // Apply image processing for better OCR
+      context.filter = 'contrast(1.2) brightness(1.1) saturate(1.2)';
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       context.filter = 'none';
 
       // Get high quality image
       const photoData = canvas.toDataURL('image/jpeg', 1.0);
+      setCapturedImage(photoData);
       
       const success = await processImage(photoData);
       if (success) {
         handleClose();
       }
     }
+  };
+
+  const retakePhoto = () => {
+    setCapturedImage(null);
+    setError(null);
   };
 
   return (
@@ -143,35 +158,63 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
               <X size={20} />
             </button>
 
-            {/* Camera view */}
+            {/* Camera view or captured image */}
             <div className="relative aspect-[4/3]">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                className="w-full h-full object-cover"
-              />
+              {!capturedImage ? (
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <img
+                  src={capturedImage}
+                  alt="Captured ID"
+                  className="w-full h-full object-contain"
+                />
+              )}
+
+              {/* Error message */}
               {error && (
                 <div className="absolute top-4 left-4 right-4 bg-red-500 text-white px-4 py-2 rounded">
                   {error}
                 </div>
               )}
-              <div className="absolute bottom-4 left-0 right-0 flex justify-center">
-                <button
-                  onClick={capturePhoto}
-                  disabled={isProcessing}
-                  className="px-6 py-2 bg-black dark:bg-white text-white dark:text-black 
-                           rounded-lg shadow-lg hover:bg-opacity-90 
-                           disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isProcessing ? 'Processing...' : 'Capture Photo'}
-                </button>
+
+              {/* Action buttons */}
+              <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
+                {!capturedImage ? (
+                  <button
+                    onClick={capturePhoto}
+                    disabled={isProcessing}
+                    className="px-6 py-2 bg-black dark:bg-white text-white dark:text-black 
+                             rounded-lg shadow-lg hover:bg-opacity-90 
+                             disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isProcessing ? 'Processing...' : 'Capture Photo'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={retakePhoto}
+                    className="px-6 py-2 bg-black dark:bg-white text-white dark:text-black 
+                             rounded-lg shadow-lg hover:bg-opacity-90 flex items-center gap-2"
+                  >
+                    <RotateCcw size={16} />
+                    Retake Photo
+                  </button>
+                )}
               </div>
             </div>
 
             {/* Instructions */}
             <div className="p-4 text-center text-gray-600 dark:text-gray-400">
-              <p>Position the ID/Passport in the frame and ensure good lighting</p>
+              <p className="mb-2">Position the ID/Passport in the frame and ensure:</p>
+              <ul className="text-sm">
+                <li>• Good lighting without glare</li>
+                <li>• All text is clearly visible</li>
+                <li>• ID card fills most of the frame</li>
+              </ul>
             </div>
 
             <canvas ref={canvasRef} className="hidden" />
