@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Camera, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { visitorService } from '../services/visitorService';
+import { visitorService } from '../../services/visitorService';
 
 const CameraModal = ({ isOpen, onClose, onCapture }) => {
   const [stream, setStream] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -17,8 +18,8 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
         mediaStream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: 'environment',
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
+            width: { ideal: 2048 }, // Higher resolution
+            height: { ideal: 1536 }
           }
         });
         
@@ -35,7 +36,7 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
         }
       } catch (error) {
         console.error('Error accessing camera:', error);
-        alert('Failed to access camera. Please make sure you have given camera permissions.');
+        setError('Failed to access camera. Please make sure you have given camera permissions.');
       }
     };
 
@@ -55,33 +56,42 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
     }
+    setError(null);
     onClose();
   };
 
   const processImage = async (photoData) => {
     try {
       setIsProcessing(true);
-      const extractedText = await visitorService.extractTextFromImage(photoData);
-      const documentData = visitorService.parseDocumentText(extractedText);
+      setError(null);
       
+      console.log('Starting OCR process...');
+      const extractedText = await visitorService.extractTextFromImage(photoData);
+      console.log('OCR completed. Processing text...');
+      
+      const documentData = visitorService.parseDocumentText(extractedText);
+      console.log('Document data parsed:', documentData);
+
+      if (!documentData.fullName && !documentData.identityNumber) {
+        setError('Could not read the document clearly. Please try again with better lighting.');
+        return false;
+      }
+
       onCapture({
         photoUrl: photoData,
         ...documentData
       });
+      
+      return true;
     } catch (error) {
       console.error('Error processing image:', error);
-      onCapture({
-        photoUrl: photoData,
-        fullName: '',
-        identityNumber: '',
-        gender: '',
-        nationality: ''
-      });
+      setError('Error processing the image. Please try again.');
+      return false;
     } finally {
       setIsProcessing(false);
-      handleClose();
     }
   };
+
   const capturePhoto = async () => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
@@ -92,42 +102,20 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
-      // Apply image processing for better OCR
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      // Clear canvas and draw new image
+      context.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Increase contrast and sharpness
+      // Basic image processing for better OCR
       context.filter = 'contrast(1.2) brightness(1.1)';
-      context.drawImage(canvas, 0, 0);
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
       context.filter = 'none';
 
-      // Convert to high-quality JPEG
+      // Get high quality image
       const photoData = canvas.toDataURL('image/jpeg', 1.0);
-
-      console.log('Capturing photo...');
-      setIsProcessing(true);
-
-      try {
-        const extractedText = await visitorService.extractTextFromImage(photoData);
-        console.log('Extracted text:', extractedText);
-        
-        const documentData = visitorService.parseDocumentText(extractedText);
-        console.log('Parsed data:', documentData);
-
-        // Only close and send data if we got some results
-        if (documentData.fullName || documentData.identityNumber) {
-          onCapture({
-            photoUrl: photoData,
-            ...documentData
-          });
-          handleClose();
-        } else {
-          alert('Could not read the document clearly. Please try again with better lighting and make sure the document is clearly visible.');
-        }
-      } catch (error) {
-        console.error('Error processing image:', error);
-        alert('Error processing the image. Please try again.');
-      } finally {
-        setIsProcessing(false);
+      
+      const success = await processImage(photoData);
+      if (success) {
+        handleClose();
       }
     }
   };
@@ -139,7 +127,7 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
         >
           <motion.div
             initial={{ scale: 0.95 }}
@@ -156,13 +144,18 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
             </button>
 
             {/* Camera view */}
-            <div className="relative aspect-video">
+            <div className="relative aspect-[4/3]">
               <video
                 ref={videoRef}
                 autoPlay
                 playsInline
                 className="w-full h-full object-cover"
               />
+              {error && (
+                <div className="absolute top-4 left-4 right-4 bg-red-500 text-white px-4 py-2 rounded">
+                  {error}
+                </div>
+              )}
               <div className="absolute bottom-4 left-0 right-0 flex justify-center">
                 <button
                   onClick={capturePhoto}
