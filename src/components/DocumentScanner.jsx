@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Camera } from 'lucide-react';
-import { visitorService } from '../../services/visitorService';
+import { visitorService } from '../services/visitorService';
 
 const DocumentScanner = ({ onScan, onPhotoCapture }) => {
   const [isCapturing, setIsCapturing] = useState(false);
