@@ -108,7 +108,7 @@ parseDocumentText: (text) => {
     console.error('Document parsing error:', error);
     throw new Error('Failed to parse document text');
   }
-}
+},
 
   // Upload captured photo to storage
   uploadPhoto: async (photoData) => {
