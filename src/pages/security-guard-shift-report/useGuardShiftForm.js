@@ -31,7 +31,7 @@ export const useGuardShiftForm = () => {
   };
   
   const [formData, setFormData] = useState({
-    location: '', // Added location field
+    location: '',
     shiftType: '',
     shiftStartTime: '',
     shiftEndTime: '',
@@ -99,7 +99,7 @@ export const useGuardShiftForm = () => {
 
       const submissionData = {
         submitted_by: user?.username,
-        location: formData.location, // Added location
+        location: formData.location,
         shift_type: formData.shiftType,
         shift_start_time: formData.shiftStartTime,
         shift_end_time: formData.shiftEndTime,
@@ -118,7 +118,7 @@ export const useGuardShiftForm = () => {
         incident_description: formData.incidentDescription || null,
         action_taken: formData.actionTaken || null,
         notes: formData.notes || null,
-        submitted_at: new Date().toISOString()
+        created_at: new Date().toISOString()
       };
 
       const { error: submitError } = await supabase
