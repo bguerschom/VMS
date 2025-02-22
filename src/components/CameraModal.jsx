@@ -82,19 +82,53 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
       handleClose();
     }
   };
-
   const capturePhoto = async () => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
 
+      // Set high resolution
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      const photoData = canvas.toDataURL('image/jpeg', 0.8);
-      await processImage(photoData);
+      // Apply image processing for better OCR
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      // Increase contrast and sharpness
+      context.filter = 'contrast(1.2) brightness(1.1)';
+      context.drawImage(canvas, 0, 0);
+      context.filter = 'none';
+
+      // Convert to high-quality JPEG
+      const photoData = canvas.toDataURL('image/jpeg', 1.0);
+
+      console.log('Capturing photo...');
+      setIsProcessing(true);
+
+      try {
+        const extractedText = await visitorService.extractTextFromImage(photoData);
+        console.log('Extracted text:', extractedText);
+        
+        const documentData = visitorService.parseDocumentText(extractedText);
+        console.log('Parsed data:', documentData);
+
+        // Only close and send data if we got some results
+        if (documentData.fullName || documentData.identityNumber) {
+          onCapture({
+            photoUrl: photoData,
+            ...documentData
+          });
+          handleClose();
+        } else {
+          alert('Could not read the document clearly. Please try again with better lighting and make sure the document is clearly visible.');
+        }
+      } catch (error) {
+        console.error('Error processing image:', error);
+        alert('Error processing the image. Please try again.');
+      } finally {
+        setIsProcessing(false);
+      }
     }
   };
 
