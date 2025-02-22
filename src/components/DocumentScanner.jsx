@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Camera } from 'lucide-react';
+import { visitorService } from '../../services/visitorService';
 
 const DocumentScanner = ({ onScan, onPhotoCapture }) => {
   const [isCapturing, setIsCapturing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [stream, setStream] = useState(null);
 
-  // Cleanup function for camera stream
   useEffect(() => {
     return () => {
       if (stream) {
@@ -16,7 +17,6 @@ const DocumentScanner = ({ onScan, onPhotoCapture }) => {
     };
   }, [stream]);
 
-  // Start camera with proper video initialization
   const startCamera = async () => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -31,7 +31,6 @@ const DocumentScanner = ({ onScan, onPhotoCapture }) => {
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        // Wait for video to be ready
         await new Promise((resolve) => {
           videoRef.current.onloadedmetadata = () => {
             videoRef.current.play();
@@ -46,7 +45,6 @@ const DocumentScanner = ({ onScan, onPhotoCapture }) => {
     }
   };
 
-  // Stop camera
   const stopCamera = () => {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
@@ -55,31 +53,26 @@ const DocumentScanner = ({ onScan, onPhotoCapture }) => {
     setIsCapturing(false);
   };
 
-  // Capture photo
-  const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
-
-      // Set canvas dimensions to match video
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-
-      // Draw video frame to canvas
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      // Convert to base64
-      const photoData = canvas.toDataURL('image/jpeg', 0.8);
+  const processImage = async (photoData) => {
+    try {
+      setIsProcessing(true);
       
-      // Stop camera after capture
-      stopCamera();
-
-      // Send the photo data back
+      // Extract text from image
+      const extractedText = await visitorService.extractTextFromImage(photoData);
+      
+      // Parse the extracted text
+      const documentData = visitorService.parseDocumentText(extractedText);
+      
+      // Send back both photo and extracted data
+      onScan({
+        photoUrl: photoData,
+        ...documentData
+      });
+      
       onPhotoCapture(photoData);
-      
-      // For now, just send dummy data for demonstration
-      // In production, you would integrate with actual OCR service
+    } catch (error) {
+      console.error('Error processing image:', error);
+      // Still send the photo even if OCR fails
       onScan({
         photoUrl: photoData,
         fullName: '',
@@ -87,6 +80,33 @@ const DocumentScanner = ({ onScan, onPhotoCapture }) => {
         gender: '',
         nationality: ''
       });
+      onPhotoCapture(photoData);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const capturePhoto = async () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
+
+      // Match canvas size to video
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      // Draw the video frame
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Get the photo data
+      const photoData = canvas.toDataURL('image/jpeg', 0.8);
+      
+      // Stop the camera
+      stopCamera();
+
+      // Process the image
+      await processImage(photoData);
     }
   };
 
@@ -95,7 +115,7 @@ const DocumentScanner = ({ onScan, onPhotoCapture }) => {
       {!isCapturing ? (
         <button
           onClick={startCamera}
-          className="w-full h-full rounded-full bg-gray-100 dark:bg-gray-700 
+          className="w-full h-full bg-gray-100 dark:bg-gray-700 
                      flex items-center justify-center cursor-pointer
                      hover:bg-gray-200 dark:hover:bg-gray-600 
                      transition-colors duration-200"
@@ -108,17 +128,18 @@ const DocumentScanner = ({ onScan, onPhotoCapture }) => {
             ref={videoRef}
             autoPlay
             playsInline
-            className="w-full h-full rounded-full object-cover"
+            className="w-full h-full object-cover"
           />
           <button
             onClick={capturePhoto}
+            disabled={isProcessing}
             className="absolute bottom-2 left-1/2 transform -translate-x-1/2
                        px-4 py-2 bg-black dark:bg-white 
                        text-white dark:text-black rounded-lg
                        hover:bg-gray-800 dark:hover:bg-gray-200
-                       text-sm"
+                       text-sm disabled:opacity-50"
           >
-            Capture
+            {isProcessing ? 'Processing...' : 'Capture'}
           </button>
         </div>
       )}
