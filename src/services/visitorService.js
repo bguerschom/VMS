@@ -7,27 +7,28 @@ import { createWorker } from 'tesseract.js';
 export const visitorService = {
   // Extract text from captured image using Tesseract OCR
   extractTextFromImage: async (imageData) => {
-    let worker = null;
+    const worker = await createWorker({
+      logger: progress => console.log('OCR Progress:', progress)
+    });
+
     try {
       console.log('Starting OCR process...');
       
-      // Create a new worker
-      worker = await createWorker();
-      console.log('Worker created');
-
-      // Initialize worker
+      // Load language data
+      await worker.load();
       await worker.loadLanguage('eng');
       await worker.initialize('eng');
-      console.log('Worker initialized');
+      
+      console.log('Worker initialized, starting recognition...');
 
       // Recognize text
-      const { data: { text } } = await worker.recognize(imageData);
-      console.log('Text recognized:', text);
+      const { data } = await worker.recognize(imageData);
+      console.log('Text recognized:', data.text);
 
       // Cleanup
       await worker.terminate();
       
-      return text;
+      return data.text;
     } catch (error) {
       console.error('OCR Error:', error);
       if (worker) {
