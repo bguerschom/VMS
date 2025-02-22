@@ -10,6 +10,16 @@ import {
   Users,
   FileClock
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useGuardShiftForm } from './useGuardShiftForm';
 
 // Define location groups
@@ -32,7 +42,9 @@ const LOCATION_GROUPS = {
 };
 
 const GuardShiftReport = () => {
-
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [monitoringEnabled, setMonitoringEnabled] = useState(true);
+  
   const { 
     formData, 
     loading, 
@@ -45,8 +57,80 @@ const GuardShiftReport = () => {
     setFormData,
     addTeamMember,
     removeTeamMember,
-    handleSubmit
+    handleSubmit: originalHandleSubmit
   } = useGuardShiftForm();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setIsConfirmDialogOpen(true);
+  };
+
+  const confirmSubmit = () => {
+    setIsConfirmDialogOpen(false);
+    originalHandleSubmit();
+  };
+
+  const renderConfirmationContent = () => {
+    return (
+      <div className="space-y-4 max-h-96 overflow-y-auto">
+        <h3 className="font-medium">Shift Information</h3>
+        <div className="pl-4 space-y-1 text-sm">
+          <p>Location: {formData.location}</p>
+          <p>Shift Type: {formData.shiftType}</p>
+          <p>Start Time: {new Date(formData.shiftStartTime).toLocaleString()}</p>
+          <p>End Time: {new Date(formData.shiftEndTime).toLocaleString()}</p>
+        </div>
+
+        <h3 className="font-medium">Team Members</h3>
+        <div className="pl-4">
+          {formData.teamMembers.map((member, index) => (
+            <p key={index} className="text-sm">{member.name} (ID: {member.id})</p>
+          ))}
+        </div>
+
+        {monitoringEnabled && (
+          <>
+            <h3 className="font-medium">CCTV Monitoring Status</h3>
+            <div className="pl-4">
+              {Object.entries(formData.remoteLocationsChecked).map(([location, data]) => (
+                <p key={location} className="text-sm">
+                  {location}: {data.status} {data.notes ? `- ${data.notes}` : ''}
+                </p>
+              ))}
+            </div>
+          </>
+        )}
+
+        <h3 className="font-medium">Utility Status</h3>
+        <div className="pl-4 space-y-1 text-sm">
+          <p>Electricity: {formData.electricityStatus}</p>
+          <p>Water: {formData.waterStatus}</p>
+          <p>Office: {formData.officeStatus}</p>
+          <p>Parking: {formData.parkingStatus}</p>
+        </div>
+
+        {formData.incidentOccurred && (
+          <>
+            <h3 className="font-medium">Incident Details</h3>
+            <div className="pl-4 space-y-1 text-sm">
+              <p>Type: {formData.incidentType}</p>
+              <p>Time: {formData.incidentTime}</p>
+              <p>Location: {formData.incidentLocation}</p>
+              <p>Description: {formData.incidentDescription}</p>
+              <p>Action Taken: {formData.actionTaken}</p>
+            </div>
+          </>
+        )}
+
+        {formData.notes && (
+          <>
+            <h3 className="font-medium">Additional Notes</h3>
+            <p className="pl-4 text-sm">{formData.notes}</p>
+          </>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -69,6 +153,23 @@ const GuardShiftReport = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Report Submission</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please review the following information before submitting:
+              {renderConfirmationContent()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmSubmit}>Confirm Submit</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <motion.div
@@ -95,7 +196,7 @@ const GuardShiftReport = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Shift Information */}
+            {/* Shift Information */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -107,7 +208,19 @@ const GuardShiftReport = () => {
                 Shift Information
               </h2>
               
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <select
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
+                           dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black"
+                  required
+                >
+                  <option value="">Select Location</option>
+                  <option value="nyarutarama">Nyarutarama</option>
+                  <option value="remera">Remera Switch</option>
+                </select>
+
                 <select
                   value={formData.shiftType}
                   onChange={(e) => setFormData({ ...formData, shiftType: e.target.value })}
@@ -215,89 +328,103 @@ const GuardShiftReport = () => {
               transition={{ delay: 0.3 }}
               className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-6"
             >
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-                <Camera className="w-5 h-5 mr-2" />
-                Remote CCTV Monitoring
-              </h2>
-              
-              <div className="mt-4 space-y-6">
-                <div className="w-full">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Select Monitoring Location
-                  </label>
-                  <select
-                    value={selectedLocation}
-                    onChange={(e) => {
-                      setSelectedLocation(e.target.value);
-                      setFormData({
-                        ...formData,
-                        remoteLocationsChecked: {}
-                      });
-                    }}
-                    className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                             dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black"
-                    required
-                  >
-                    <option value="">Select Location</option>
-                    <option value="nyarutarama">Nyarutarama</option>
-                    <option value="remera">Remera Innovation Hub</option>
-                  </select>
-                </div>
-
-                {selectedLocation && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {LOCATION_GROUPS[selectedLocation].map(location => (
-                      <div key={location.id} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-700 dark:text-gray-300">{location.name}</span>
-                          <select
-                            value={formData.remoteLocationsChecked[location.name]?.status || ''}
-                            onChange={(e) => setFormData({
-                              ...formData,
-                              remoteLocationsChecked: {
-                                ...formData.remoteLocationsChecked,
-                                [location.name]: {
-                                  ...formData.remoteLocationsChecked[location.name],
-                                  status: e.target.value
-                                }
-                              }
-                            })}
-                            className="px-2 py-1 text-sm rounded border border-gray-200 dark:border-gray-600
-                                     dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black"
-                            required
-                          >
-                            <option value="">Please select status</option>
-                            <option value="normal">Normal</option>
-                            <option value="issues">Issues</option>
-                            <option value="offline">Offline</option>
-                          </select>
-                        </div>
-                        
-                        {formData.remoteLocationsChecked[location.name]?.status === 'issues' && (
-                          <input
-                            type="text"
-                            placeholder="Enter notes about issues..."
-                            value={formData.remoteLocationsChecked[location.name]?.notes || ''}
-                            onChange={(e) => setFormData({
-                              ...formData,
-                              remoteLocationsChecked: {
-                                ...formData.remoteLocationsChecked,
-                                [location.name]: {
-                                  ...formData.remoteLocationsChecked[location.name],
-                                  notes: e.target.value
-                                }
-                              }
-                            })}
-                            className="w-full px-3 py-1 text-sm rounded border border-gray-200 dark:border-gray-600
-                                     dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black"
-                            required
-                          />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+                  <Camera className="w-5 h-5 mr-2" />
+                  Remote CCTV Monitoring
+                </h2>
+                
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={monitoringEnabled}
+                    onChange={(e) => setMonitoringEnabled(e.target.checked)}
+                    className="rounded border-gray-300 text-black focus:ring-black"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Enable Monitoring</span>
+                </label>
               </div>
+              
+              {monitoringEnabled && (
+                <div className="mt-4 space-y-6">
+                  <div className="w-full">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Select Monitoring Location
+                    </label>
+                    <select
+                      value={selectedLocation}
+                      onChange={(e) => {
+                        setSelectedLocation(e.target.value);
+                        setFormData({
+                          ...formData,
+                          remoteLocationsChecked: {}
+                        });
+                      }}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
+                               dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black"
+                      required={monitoringEnabled}
+                    >
+                      <option value="">Select Location</option>
+                      <option value="nyarutarama">Nyarutarama</option>
+                      <option value="remera">Remera Innovation Hub</option>
+                    </select>
+                  </div>
+
+                  {selectedLocation && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {LOCATION_GROUPS[selectedLocation].map(location => (
+                        <div key={location.id} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-700 dark:text-gray-300">{location.name}</span>
+                            <select
+                              value={formData.remoteLocationsChecked[location.name]?.status || ''}
+                              onChange={(e) => setFormData({
+                                ...formData,
+                                remoteLocationsChecked: {
+                                  ...formData.remoteLocationsChecked,
+                                  [location.name]: {
+                                    ...formData.remoteLocationsChecked[location.name],
+                                    status: e.target.value
+                                  }
+                                }
+                              })}
+                              className="px-2 py-1 text-sm rounded border border-gray-200 dark:border-gray-600
+                                       dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black"
+                              required={monitoringEnabled}
+                            >
+                              <option value="">Please select status</option>
+                              <option value="normal">Normal</option>
+                              <option value="issues">Issues</option>
+                              <option value="offline">Offline</option>
+                            </select>
+                          </div>
+                          
+                          {formData.remoteLocationsChecked[location.name]?.status === 'issues' && (
+                            <input
+                              type="text"
+                              placeholder="Enter notes about issues..."
+                              value={formData.remoteLocationsChecked[location.name]?.notes || ''}
+                              onChange={(e) => setFormData({
+                                ...formData,
+                                remoteLocationsChecked: {
+                                  ...formData.remoteLocationsChecked,
+                                  [location.name]: {
+                                    ...formData.remoteLocationsChecked[location.name],
+                                    notes: e.target.value
+                                  }
+                                }
+                              })}
+                              className="w-full px-3 py-1 text-sm rounded border border-gray-200 dark:border-gray-600
+                                       dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black"
+                              required={monitoringEnabled}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </motion.div>
 
             {/* Utility Status */}
@@ -391,7 +518,7 @@ const GuardShiftReport = () => {
               </div>
             </motion.div>
 
-             {/* Incident Reporting */}
+            {/* Incident Reporting */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
