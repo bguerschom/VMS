@@ -5,163 +5,138 @@ import { generateDepartmentCards } from '../utils/constants';
 
 export const visitorService = {
   // Extract text from captured image using Tesseract OCR
-  extractTextFromImage: async (imageData, enhancedMode = false) => {
-    const worker = await createWorker({
-      logger: progress => console.log('OCR Progress:', progress)
+// Update these functions in your visitorService.js
+
+extractTextFromImage: async (imageData, enhancedMode = false) => {
+  const worker = await createWorker({
+    logger: progress => console.log('OCR Progress:', progress)
+  });
+
+  try {
+    console.log('Starting OCR process...');
+    
+    await worker.load();
+    await worker.loadLanguage('eng');
+    await worker.initialize('eng');
+
+    // Configure specific settings for ID card text detection
+    await worker.setParameters({
+      tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/abcdefghijklmnopqrstuvwxyz ',
+      tessedit_ocr_engine_mode: '2', // Use Legacy + LSTM mode
+      tessedit_pageseg_mode: '6', // Assume uniform text block
+      textord_min_linesize: '2.5', // Adjust for small text
+      tessedit_do_invert: '0'
     });
 
-    try {
-      console.log('Starting OCR process...');
-      
-      // Load language data
-      await worker.load();
-      await worker.loadLanguage('eng');
-      await worker.initialize('eng');
-
-      // Set specific configurations for ID card recognition
-      if (enhancedMode) {
-        await worker.setParameters({
-          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/abcdefghijklmnopqrstuvwxyz ',
-          tessedit_pageseg_mode: '6', // Assume uniform text block
-          preserve_interword_spaces: '1',
-          tessedit_do_invert: '0',
-        });
-      }
-      
-      console.log('Worker initialized, starting recognition...');
-
-      // Recognize text
-      const { data } = await worker.recognize(imageData);
-      console.log('Text recognized:', data.text);
-
-      // Cleanup
-      await worker.terminate();
-      
-      return data.text;
-    } catch (error) {
-      console.error('OCR Error:', error);
-      if (worker) {
-        await worker.terminate();
-      }
-      throw new Error('Failed to extract text from image');
-    }
-  },
-
-  // Parse Rwandan ID/Passport text
-  parseDocumentText: (text) => {
-    try {
-      console.log('Starting text parsing:', text);
-      
-      const data = {
-        fullName: '',
-        identityNumber: '',
-        gender: '',
-        nationality: 'Rwandan'
-      };
-
-      // Split text into lines and normalize
-      const lines = text.split('\n').map(line => line.trim());
-      
-      // First pass: Look for exact matches
-      lines.forEach((line, index) => {
-        const lowerLine = line.toLowerCase();
-        
-        // Name detection
-        if (lowerLine.includes('amazina') || lowerLine.includes('names')) {
-          // Check next line for the actual name
-          if (lines[index + 1] && !lines[index + 1].toLowerCase().includes('national')) {
-            data.fullName = lines[index + 1].trim();
-          } else {
-            // Try to extract name from the same line
-            const afterNames = line.split(/amazina|names/i)[1];
-            if (afterNames) {
-              data.fullName = afterNames.replace(/[/:]/g, '').trim();
-            }
-          }
-        }
-
-        // ID number detection
-        if (lowerLine.includes('national id no') || lowerLine.includes('indangamuntu')) {
-          // Look for number pattern: 1 XXXX X XXXXXXX X XX
-          const idMatch = line.match(/\d[\s\d]+\d/);
-          if (idMatch) {
-            data.identityNumber = idMatch[0].replace(/\s/g, '');
-          } else if (lines[index + 1]) {
-            // Check next line for ID number
-            const nextLineMatch = lines[index + 1].match(/\d[\s\d]+\d/);
-            if (nextLineMatch) {
-              data.identityNumber = nextLineMatch[0].replace(/\s/g, '');
-            }
-          }
-        }
-
-        // Gender detection
-        if (lowerLine.includes('sex') || lowerLine.includes('igitsina')) {
-          if (lowerLine.includes('gabo') || lowerLine.includes('/ m')) {
-            data.gender = 'Male';
-          } else if (lowerLine.includes('gore') || lowerLine.includes('/ f')) {
-            data.gender = 'Female';
-          }
-        }
+    // First try with normal settings
+    let { data } = await worker.recognize(imageData);
+    
+    // If text seems incomplete, try with different settings
+    if (!data.text.toLowerCase().includes('names') || !data.text.includes('ID No')) {
+      await worker.setParameters({
+        tessedit_ocr_engine_mode: '3', // Use only LSTM
+        scale_factor: '1.5', // Increase image scale
+        textord_min_linesize: '2.0'
       });
-
-      // Second pass: If still missing data, try alternative methods
-      if (!data.fullName || !data.identityNumber || !data.gender) {
-        console.log('Missing data, trying alternative extraction methods...');
-
-        // Alternative name detection
-        if (!data.fullName) {
-          // Look for lines with all caps or proper case words
-          const possibleNames = lines.filter(line => 
-            /^[A-Z\s]+$/.test(line) || /^[A-Z][a-z]+(\s+[A-Z][a-z]+)+$/.test(line)
-          );
-          if (possibleNames.length > 0) {
-            data.fullName = possibleNames[0].trim();
-          }
-        }
-
-        // Alternative ID detection
-        if (!data.identityNumber) {
-          // Look for any 16-digit number in the text
-          const fullText = text.replace(/\s/g, '');
-          const idMatch = fullText.match(/\d{16}/);
-          if (idMatch) {
-            data.identityNumber = idMatch[0];
-          }
-        }
-
-        // Alternative gender detection
-        if (!data.gender) {
-          const fullText = text.toLowerCase();
-          if (fullText.includes('male') || fullText.includes('gabo')) {
-            data.gender = 'Male';
-          } else if (fullText.includes('female') || fullText.includes('gore')) {
-            data.gender = 'Female';
-          }
-        }
-      }
-
-      // Clean up and validate the results
-      if (data.fullName) {
-        data.fullName = data.fullName
-          .replace(/Amazina|Names|\/|:/gi, '')
-          .trim()
-          .toUpperCase();
-      }
-
-      if (data.identityNumber) {
-        data.identityNumber = data.identityNumber
-          .replace(/[^\d]/g, '')
-          .substring(0, 16); // Ensure exactly 16 digits
-      }
-
-      console.log('Final parsed data:', data);
-      return data;
-    } catch (error) {
-      console.error('Document parsing error:', error);
-      throw new Error('Failed to parse document text');
+      const result = await worker.recognize(imageData);
+      data = result.data;
     }
-  },
+
+    console.log('Extracted text:', data.text);
+    await worker.terminate();
+    return data.text;
+
+  } catch (error) {
+    console.error('OCR Error:', error);
+    if (worker) {
+      await worker.terminate();
+    }
+    throw new Error('Failed to extract text from image');
+  }
+},
+
+parseDocumentText: (text) => {
+  try {
+    console.log('Starting text parsing:', text);
+    
+    const data = {
+      fullName: '',
+      identityNumber: '',
+      gender: '',
+      nationality: 'Rwandan'
+    };
+
+    // Split into lines and clean up
+    const lines = text.split('\n').map(line => {
+      return line.trim().replace(/\s+/g, ' ');
+    });
+
+    console.log('Processing lines:', lines);
+
+    // Process each line
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].toLowerCase();
+      const nextLine = lines[i + 1] ? lines[i + 1].toLowerCase() : '';
+
+      // Name detection - specific to Rwanda ID format
+      if (line.includes('amazina') || line.includes('names')) {
+        // Look for name in the next line if it exists and doesn't contain other fields
+        if (nextLine && !nextLine.includes('birth') && !nextLine.includes('sex')) {
+          data.fullName = nextLine;
+        } else {
+          // Try to extract name from the current line
+          const nameParts = lines[i].split(/[/:]/).map(part => part.trim());
+          if (nameParts.length > 1) {
+            data.fullName = nameParts[nameParts.length - 1];
+          }
+        }
+      }
+
+      // ID Number detection - looking for the specific Rwanda ID format
+      if (line.includes('national id no') || line.includes('indangamuntu')) {
+        // Look for the ID pattern: 1 YYYY X XXXXXXX X XX
+        const idPattern = /1\s*\d{4}\s*\d\s*\d{7}\s*\d\s*\d{2}/;
+        const idMatch = line.match(idPattern) || nextLine.match(idPattern);
+        if (idMatch) {
+          data.identityNumber = idMatch[0].replace(/\s/g, '');
+        }
+      }
+
+      // Gender detection - specific to Rwanda ID format
+      if (line.includes('sex') || line.includes('igitsina')) {
+        // Look for Gabo/M or Gore/F pattern
+        if (line.includes('gabo') || line.includes('/ m')) {
+          data.gender = 'Male';
+        } else if (line.includes('gore') || line.includes('/ f')) {
+          data.gender = 'Female';
+        }
+      }
+    }
+
+    // Clean up the extracted data
+    if (data.fullName) {
+      data.fullName = data.fullName
+        .replace(/amazina|names|[/:]/gi, '')
+        .trim()
+        .split(' ')
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+        .join(' ');
+    }
+
+    // Validate the extracted data
+    const isValid = data.fullName && data.identityNumber && data.gender;
+    if (!isValid) {
+      console.log('Validation failed:', data);
+      throw new Error('Could not extract all required fields');
+    }
+
+    console.log('Successfully parsed data:', data);
+    return data;
+  } catch (error) {
+    console.error('Document parsing error:', error);
+    throw new Error('Failed to parse document text');
+  }
+},
 
   // Upload captured photo to storage
   uploadPhoto: async (photoData) => {
