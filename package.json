@@ -28,7 +28,8 @@
     "bcryptjs":"^2.4.3",
     "@radix-ui/react-dialog": "^1.0.5",
     "tailwind-merge": "^2.2.0",
-    "clsx": "^2.1.0"
+    "clsx": "^2.1.0",
+    "tesseract.js":"^6.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.37",
