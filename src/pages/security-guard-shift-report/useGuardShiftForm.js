@@ -9,26 +9,29 @@ export const useGuardShiftForm = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedLocation, setSelectedLocation] = useState('');
   const [newTeamMember, setNewTeamMember] = useState({ id: '', name: '' });
+  const [monitoringEnabled, setMonitoringEnabled] = useState(true);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
   const LOCATION_GROUPS = {
-  nyarutarama: [
-    { id: 'loc1', name: 'Head Quaters - Nyarutarama' },
-    { id: 'loc3', name: 'Kigali - Service Centers' },
-    { id: 'loc4', name: 'Eastern - Service Centers' },
-    { id: 'loc5', name: 'Gahengeri - Switch' },
-    { id: 'loc6', name: 'Norther - Service Centers' },
-    { id: 'loc7', name: 'Gicumbi - Switch' },
-    { id: 'loc8', name: 'Southern - Service Centers' },
-    { id: 'loc9', name: 'Nyanza - Switch' },
-    { id: 'loc10', name: 'Western - Service Centers' },
-    { id: 'loc11', name: 'Karongi - Switch' }
-  ],
-  remera: [
-    { id: 'loc2', name: 'Remera Innovation HUB - Remera' }
-  ]
-};
+    nyarutarama: [
+      { id: 'loc1', name: 'Head Quaters - Nyarutarama' },
+      { id: 'loc3', name: 'Kigali - Service Centers' },
+      { id: 'loc4', name: 'Eastern - Service Centers' },
+      { id: 'loc5', name: 'Gahengeri - Switch' },
+      { id: 'loc6', name: 'Norther - Service Centers' },
+      { id: 'loc7', name: 'Gicumbi - Switch' },
+      { id: 'loc8', name: 'Southern - Service Centers' },
+      { id: 'loc9', name: 'Nyanza - Switch' },
+      { id: 'loc10', name: 'Western - Service Centers' },
+      { id: 'loc11', name: 'Karongi - Switch' }
+    ],
+    remera: [
+      { id: 'loc2', name: 'Remera Innovation HUB - Remera' }
+    ]
+  };
   
   const [formData, setFormData] = useState({
+    location: '', // Added location field
     shiftType: '',
     shiftStartTime: '',
     shiftEndTime: '',
@@ -77,30 +80,33 @@ export const useGuardShiftForm = () => {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setLoading(true);
     
     try {
       // Prepare location data - ensure all locations have a status
-      const locationGroup = selectedLocation ? LOCATION_GROUPS[selectedLocation] : [];
+      const locationGroup = selectedLocation && monitoringEnabled ? LOCATION_GROUPS[selectedLocation] : [];
       const locationStatuses = {};
       
-      locationGroup.forEach(location => {
-        locationStatuses[location.name] = {
-          status: formData.remoteLocationsChecked[location.name]?.status || 'normal',
-          notes: formData.remoteLocationsChecked[location.name]?.notes || ''
-        };
-      });
+      if (monitoringEnabled) {
+        locationGroup.forEach(location => {
+          locationStatuses[location.name] = {
+            status: formData.remoteLocationsChecked[location.name]?.status || 'normal',
+            notes: formData.remoteLocationsChecked[location.name]?.notes || ''
+          };
+        });
+      }
 
       const submissionData = {
         submitted_by: user?.username,
+        location: formData.location, // Added location
         shift_type: formData.shiftType,
         shift_start_time: formData.shiftStartTime,
         shift_end_time: formData.shiftEndTime,
         team_members: formData.teamMembers,
-        monitoring_location: selectedLocation,
-        remote_locations_checked: locationStatuses,
+        monitoring_enabled: monitoringEnabled, // Added monitoring toggle state
+        monitoring_location: monitoringEnabled ? selectedLocation : null,
+        remote_locations_checked: monitoringEnabled ? locationStatuses : null,
         electricity_status: formData.electricityStatus || 'normal',
         water_status: formData.waterStatus || 'normal',
         office_status: formData.officeStatus || 'normal',
@@ -111,7 +117,8 @@ export const useGuardShiftForm = () => {
         incident_location: formData.incidentLocation || null,
         incident_description: formData.incidentDescription || null,
         action_taken: formData.actionTaken || null,
-        notes: formData.notes || null
+        notes: formData.notes || null,
+        submitted_at: new Date().toISOString()
       };
 
       const { error: submitError } = await supabase
@@ -124,6 +131,7 @@ export const useGuardShiftForm = () => {
 
       // Reset form
       setFormData({
+        location: '',
         shiftType: '',
         shiftStartTime: '',
         shiftEndTime: '',
@@ -142,12 +150,27 @@ export const useGuardShiftForm = () => {
         notes: ''
       });
       setSelectedLocation('');
+      setMonitoringEnabled(true);
     } catch (error) {
       console.error('Error submitting report:', error);
       showToast('Failed to submit report. Please try again.', 'error');
     } finally {
       setLoading(false);
+      setIsConfirmDialogOpen(false);
     }
+  };
+
+  const initiateSubmit = (e) => {
+    e.preventDefault();
+    setIsConfirmDialogOpen(true);
+  };
+
+  const confirmSubmit = () => {
+    handleSubmit();
+  };
+
+  const cancelSubmit = () => {
+    setIsConfirmDialogOpen(false);
   };
 
   return {
@@ -157,11 +180,18 @@ export const useGuardShiftForm = () => {
     currentTime,
     selectedLocation,
     newTeamMember,
+    monitoringEnabled,
+    isConfirmDialogOpen,
     setSelectedLocation,
     setNewTeamMember,
     setFormData,
+    setMonitoringEnabled,
+    setIsConfirmDialogOpen,
     addTeamMember,
     removeTeamMember,
-    handleSubmit
+    initiateSubmit,
+    confirmSubmit,
+    cancelSubmit,
+    LOCATION_GROUPS
   };
 };
