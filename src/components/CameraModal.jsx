@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Camera, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { visitorService } from '../../services/visitorService';
+import { visitorService } from '../services/visitorService';
 
 const CameraModal = ({ isOpen, onClose, onCapture }) => {
   const [stream, setStream] = useState(null);
