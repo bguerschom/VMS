@@ -5,6 +5,7 @@ import { visitorService } from '../../services/visitorService';
 import { DEPARTMENTS } from '../../utils/constants';
 import { useAuth } from '../../hooks/useAuth';
 import DocumentScanner from '../../components/DocumentScanner';
+import CameraModal from '../../components/CameraModal';
 
 // Alert/Popup Component
 const Alert = ({ message, type = 'error', onClose, onConfirm }) => (
@@ -66,6 +67,7 @@ const VisitorForm = () => {
   const [alertType, setAlertType] = useState('error');
   const [alertConfirmAction, setAlertConfirmAction] = useState(null);
   const [isPassportUser, setIsPassportUser] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   
   const [formData, setFormData] = useState({
     fullName: '',
@@ -113,21 +115,14 @@ const renderPhotoSection = () => (
             </div>
           </div>
         ) : (
-          <DocumentScanner
-            onScan={(scanData) => {
-              if (scanData.photoUrl) {
-                setPhotoUrl(scanData.photoUrl);
-                setFormData(prev => ({
-                  ...prev,
-                  fullName: scanData.fullName || prev.fullName,
-                  identityNumber: scanData.identityNumber || prev.identityNumber,
-                  gender: scanData.gender || prev.gender,
-                  nationality: scanData.nationality || prev.nationality
-                }));
-              }
-            }}
-            onPhotoCapture={(photoUrl) => setPhotoUrl(photoUrl)}
-          />
+          <button
+            onClick={() => setIsCameraOpen(true)}
+            className="w-full h-full flex items-center justify-center cursor-pointer
+                     hover:bg-gray-200 dark:hover:bg-gray-600 
+                     transition-colors duration-200"
+          >
+            <Camera className="w-12 h-12 text-gray-400 dark:text-gray-500" />
+          </button>
         )
       ) : (
         <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
@@ -143,6 +138,22 @@ const renderPhotoSection = () => (
         </div>
       )}
     </div>
+
+    {/* Camera Modal */}
+    <CameraModal
+      isOpen={isCameraOpen}
+      onClose={() => setIsCameraOpen(false)}
+      onCapture={(data) => {
+        setPhotoUrl(data.photoUrl);
+        setFormData(prev => ({
+          ...prev,
+          fullName: data.fullName || prev.fullName,
+          identityNumber: data.identityNumber || prev.identityNumber,
+          gender: data.gender || prev.gender,
+          nationality: data.nationality || prev.nationality
+        }));
+      }}
+    />
   </div>
 );
 
