@@ -1,144 +1,129 @@
 import { createWorker } from 'tesseract.js';
 import { supabase } from '../config/supabase';
-import { mockIdApi } from './mockApi';
 import { generateDepartmentCards } from '../utils/constants';
 
 export const visitorService = {
-  // Extract text from captured image using Tesseract OCR
-// Update these functions in your visitorService.js
-
-extractTextFromImage: async (imageData, enhancedMode = false) => {
-  const worker = await createWorker({
-    logger: progress => console.log('OCR Progress:', progress)
-  });
-
-  try {
-    console.log('Starting OCR process...');
+  // Extract text from captured image using Tesseract OCR with coordinate-based recognition
+  extractTextFromImage: async (imageData) => {
+    const worker = await createWorker();
     
-    await worker.load();
-    await worker.loadLanguage('eng');
-    await worker.initialize('eng');
+    try {
+      await worker.loadLanguage('eng');
+      await worker.initialize('eng');
+      
+      // Define exact coordinates for each field
+      // These values might need adjustment based on your image capture size
+      const sections = {
+        name: { top: 120, left: 180, width: 400, height: 40 },    // For "Amazina / Names"
+        gender: { top: 240, left: 180, width: 200, height: 40 },  // For "Igitsina / Sex"
+        idNumber: { top: 360, left: 180, width: 400, height: 40 } // For "ID No."
+      };
 
-    // Configure specific settings for ID card text detection
-    await worker.setParameters({
-      tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/abcdefghijklmnopqrstuvwxyz ',
-      tessedit_ocr_engine_mode: '2', // Use Legacy + LSTM mode
-      tessedit_pageseg_mode: '6', // Assume uniform text block
-      textord_min_linesize: '2.5', // Adjust for small text
-      tessedit_do_invert: '0'
-    });
-
-    // First try with normal settings
-    let { data } = await worker.recognize(imageData);
-    
-    // If text seems incomplete, try with different settings
-    if (!data.text.toLowerCase().includes('names') || !data.text.includes('ID No')) {
+      // Set parameters for better text recognition
       await worker.setParameters({
-        tessedit_ocr_engine_mode: '3', // Use only LSTM
-        scale_factor: '1.5', // Increase image scale
-        textord_min_linesize: '2.0'
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/abcdefghijklmnopqrstuvwxyz ',
+        preserve_interword_spaces: '1',
       });
-      const result = await worker.recognize(imageData);
-      data = result.data;
-    }
 
-    console.log('Extracted text:', data.text);
-    await worker.terminate();
-    return data.text;
+      // Extract text from each section
+      console.log('Extracting name...');
+      const nameResult = await worker.recognize(imageData, {
+        rectangle: sections.name
+      });
 
-  } catch (error) {
-    console.error('OCR Error:', error);
-    if (worker) {
+      console.log('Extracting gender...');
+      const genderResult = await worker.recognize(imageData, {
+        rectangle: sections.gender
+      });
+
+      console.log('Extracting ID number...');
+      const idResult = await worker.recognize(imageData, {
+        rectangle: sections.idNumber
+      });
+
+      // Process the extracted text
+      const nameText = nameResult.data.text;
+      const genderText = genderResult.data.text;
+      const idText = idResult.data.text;
+
+      console.log('Extracted texts:', {
+        name: nameText,
+        gender: genderText,
+        id: idText
+      });
+
+      // Parse the data
+      const parsedData = visitorService.parseDocumentText({
+        nameText,
+        genderText,
+        idText
+      });
+
       await worker.terminate();
+      return parsedData;
+
+    } catch (error) {
+      console.error('OCR Error:', error);
+      if (worker) {
+        await worker.terminate();
+      }
+      throw error;
     }
-    throw new Error('Failed to extract text from image');
-  }
-},
+  },
 
-parseDocumentText: (text) => {
-  try {
-    console.log('Starting text parsing:', text);
-    
-    const data = {
-      fullName: '',
-      identityNumber: '',
-      gender: '',
-      nationality: 'Rwandan'
-    };
+  // Parse extracted text into structured data
+  parseDocumentText: ({ nameText, genderText, idText }) => {
+    try {
+      const data = {
+        fullName: '',
+        identityNumber: '',
+        gender: '',
+        nationality: 'Rwandan'
+      };
 
-    // Split into lines and clean up
-    const lines = text.split('\n').map(line => {
-      return line.trim().replace(/\s+/g, ' ');
-    });
-
-    console.log('Processing lines:', lines);
-
-    // Process each line
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].toLowerCase();
-      const nextLine = lines[i + 1] ? lines[i + 1].toLowerCase() : '';
-
-      // Name detection - specific to Rwanda ID format
-      if (line.includes('amazina') || line.includes('names')) {
-        // Look for name in the next line if it exists and doesn't contain other fields
-        if (nextLine && !nextLine.includes('birth') && !nextLine.includes('sex')) {
-          data.fullName = nextLine;
-        } else {
-          // Try to extract name from the current line
-          const nameParts = lines[i].split(/[/:]/).map(part => part.trim());
-          if (nameParts.length > 1) {
-            data.fullName = nameParts[nameParts.length - 1];
+      // Extract name
+      const nameLines = nameText.split('\n');
+      for (const line of nameLines) {
+        if (line.includes('AMAZINA') || line.includes('NAMES')) {
+          const nextLine = nameLines[nameLines.indexOf(line) + 1];
+          if (nextLine) {
+            data.fullName = nextLine.trim();
+            break;
           }
+        } else if (/^[A-Z\s]+$/.test(line.trim())) {
+          // If we find a line with all capitals, it's likely the name
+          data.fullName = line.trim();
+          break;
         }
       }
 
-      // ID Number detection - looking for the specific Rwanda ID format
-      if (line.includes('national id no') || line.includes('indangamuntu')) {
-        // Look for the ID pattern: 1 YYYY X XXXXXXX X XX
-        const idPattern = /1\s*\d{4}\s*\d\s*\d{7}\s*\d\s*\d{2}/;
-        const idMatch = line.match(idPattern) || nextLine.match(idPattern);
-        if (idMatch) {
-          data.identityNumber = idMatch[0].replace(/\s/g, '');
-        }
+      // Extract gender
+      if (genderText.toLowerCase().includes('gabo') || genderText.toLowerCase().includes('m')) {
+        data.gender = 'Male';
+      } else if (genderText.toLowerCase().includes('gore') || genderText.toLowerCase().includes('f')) {
+        data.gender = 'Female';
       }
 
-      // Gender detection - specific to Rwanda ID format
-      if (line.includes('sex') || line.includes('igitsina')) {
-        // Look for Gabo/M or Gore/F pattern
-        if (line.includes('gabo') || line.includes('/ m')) {
-          data.gender = 'Male';
-        } else if (line.includes('gore') || line.includes('/ f')) {
-          data.gender = 'Female';
-        }
+      // Extract ID number
+      const idMatch = idText.match(/1\d{15}/) || idText.match(/1[\s\d]{15}/);
+      if (idMatch) {
+        data.identityNumber = idMatch[0].replace(/\s/g, '');
       }
+
+      // Validate extracted data
+      if (!data.fullName || !data.identityNumber || !data.gender) {
+        console.log('Validation failed:', data);
+        throw new Error('Could not extract all required fields');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Document parsing error:', error);
+      throw error;
     }
+  },
 
-    // Clean up the extracted data
-    if (data.fullName) {
-      data.fullName = data.fullName
-        .replace(/amazina|names|[/:]/gi, '')
-        .trim()
-        .split(' ')
-        .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-        .join(' ');
-    }
-
-    // Validate the extracted data
-    const isValid = data.fullName && data.identityNumber && data.gender;
-    if (!isValid) {
-      console.log('Validation failed:', data);
-      throw new Error('Could not extract all required fields');
-    }
-
-    console.log('Successfully parsed data:', data);
-    return data;
-  } catch (error) {
-    console.error('Document parsing error:', error);
-    throw new Error('Failed to parse document text');
-  }
-},
-
-  // Upload captured photo to storage
+  // Upload photo to storage
   uploadPhoto: async (photoData) => {
     try {
       // Convert base64 to blob
@@ -166,22 +151,18 @@ parseDocumentText: (text) => {
       return publicUrl;
     } catch (error) {
       console.error('Photo upload error:', error);
-      throw new Error('Failed to upload photo');
+      throw error;
     }
   },
 
   // Search for a visitor
   searchVisitor: async (searchTerm) => {
     try {
-      console.log('Search initiated with term:', searchTerm);
-
-      // Handle passport case
       if (searchTerm === '#00') {
-        console.log('Passport case detected');
         return { isPassport: true };
       }
 
-      // First check if visitor is already checked in
+      // Check for active check-in
       const { data: activeVisitor, error: activeError } = await supabase
         .from('visitors')
         .select('*')
@@ -189,12 +170,7 @@ parseDocumentText: (text) => {
         .is('check_out_time', null)
         .single();
 
-      if (activeError) {
-        console.log('Active visitor query error:', activeError);
-      }
-
       if (activeVisitor) {
-        console.log('Found active visitor:', activeVisitor);
         return {
           error: 'Visitor already has an active check-in',
           activeVisitor
@@ -202,56 +178,42 @@ parseDocumentText: (text) => {
       }
 
       // Get visitor history
-      const { data: visitorHistory, error: historyError } = await supabase
+      const { data: visitorHistory } = await supabase
         .from('visitors')
         .select('*')
         .or(`identity_number.eq.${searchTerm},phone_number.eq.${searchTerm}`)
         .order('check_in_time', { ascending: false })
         .limit(1);
 
-      if (historyError) {
-        console.log('History fetch error:', historyError);
-      }
+      return visitorHistory?.length > 0
+        ? { ...visitorHistory[0], isNewVisitor: false }
+        : { isNewVisitor: true };
 
-      if (visitorHistory?.length > 0) {
-        return {
-          ...visitorHistory[0],
-          isNewVisitor: false
-        };
-      }
-
-      return { isNewVisitor: true };
     } catch (error) {
       console.error('Visitor search error:', error);
-      throw new Error(`Search failed: ${error.message}`);
+      throw error;
     }
   },
 
-  // Get available visitor cards for a department
+  // Get available visitor cards
   async getAvailableCards(departmentId) {
     try {
-      // Get all possible cards for the department
       const allCards = generateDepartmentCards(departmentId);
-      
-      // Get cards currently in use
       const { data: inUseCards } = await supabase
         .from('visitors')
         .select('visitor_card')
         .eq('department', departmentId)
         .is('check_out_time', null);
 
-      // Filter out cards that are in use
       const inUseCardSet = new Set(inUseCards?.map(v => v.visitor_card) || []);
-      const availableCards = allCards.filter(card => !inUseCardSet.has(card));
-
-      return availableCards;
+      return allCards.filter(card => !inUseCardSet.has(card));
     } catch (error) {
       console.error('Error getting available cards:', error);
       throw error;
     }
   },
 
-  // Get used cards for a department
+  // Get used cards
   async getUsedCards(departmentId) {
     try {
       const { data: inUseCards, error } = await supabase
@@ -261,7 +223,6 @@ parseDocumentText: (text) => {
         .is('check_out_time', null);
 
       if (error) throw error;
-
       return inUseCards?.map(v => v.visitor_card) || [];
     } catch (error) {
       console.error('Error getting used cards:', error);
@@ -272,17 +233,14 @@ parseDocumentText: (text) => {
   // Check in visitor
   async checkInVisitor(visitorData, username) {
     try {
-      // Verify card is still available
+      // Verify card availability
       const availableCards = await this.getAvailableCards(visitorData.department);
       if (!availableCards.includes(visitorData.visitorCard)) {
         throw new Error('Selected visitor card is no longer available');
       }
 
       let photoUrl = null;
-
-      // Handle photo based on visitor type
-      if (visitorData.isPassport && visitorData.photoUrl) {
-        // Upload captured passport/ID photo
+      if (visitorData.photoUrl) {
         photoUrl = await this.uploadPhoto(visitorData.photoUrl);
       }
 
