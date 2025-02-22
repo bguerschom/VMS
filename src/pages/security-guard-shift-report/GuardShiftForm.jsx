@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   AlertCircle, 
@@ -22,29 +22,7 @@ import {
 } from "../../components/ui/alert-dialog";
 import { useGuardShiftForm } from './useGuardShiftForm';
 
-// Define location groups
-const LOCATION_GROUPS = {
-  nyarutarama: [
-    { id: 'loc1', name: 'Head Quaters - Nyarutarama' },
-    { id: 'loc3', name: 'Kigali - Service Centers' },
-    { id: 'loc4', name: 'Eastern - Service Centers' },
-    { id: 'loc5', name: 'Gahengeri - Switch' },
-    { id: 'loc6', name: 'Norther - Service Centers' },
-    { id: 'loc7', name: 'Gicumbi - Switch' },
-    { id: 'loc8', name: 'Southern - Service Centers' },
-    { id: 'loc9', name: 'Nyanza - Switch' },
-    { id: 'loc10', name: 'Western - Service Centers' },
-    { id: 'loc11', name: 'Karongi - Switch' }
-  ],
-  remera: [
-    { id: 'loc2', name: 'Remera Innovation HUB - Remera' }
-  ]
-};
-
 const GuardShiftReport = () => {
-  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
-  const [monitoringEnabled, setMonitoringEnabled] = useState(true);
-  
   const { 
     formData, 
     loading, 
@@ -52,48 +30,47 @@ const GuardShiftReport = () => {
     currentTime,
     selectedLocation,
     newTeamMember,
+    monitoringEnabled,
+    isConfirmDialogOpen,
     setSelectedLocation,
     setNewTeamMember,
     setFormData,
+    setMonitoringEnabled,
+    setIsConfirmDialogOpen,
     addTeamMember,
     removeTeamMember,
-    handleSubmit: originalHandleSubmit
+    initiateSubmit,
+    confirmSubmit,
+    cancelSubmit,
+    LOCATION_GROUPS
   } = useGuardShiftForm();
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setIsConfirmDialogOpen(true);
-  };
-
-  const confirmSubmit = () => {
-    setIsConfirmDialogOpen(false);
-    originalHandleSubmit();
-  };
 
   const renderConfirmationContent = () => {
     return (
       <div className="space-y-4 max-h-96 overflow-y-auto">
-        <h3 className="font-medium">Shift Information</h3>
-        <div className="pl-4 space-y-1 text-sm">
+        <h3 className="font-medium text-gray-900 dark:text-white">Shift Information</h3>
+        <div className="pl-4 space-y-1 text-sm text-gray-600 dark:text-gray-300">
           <p>Location: {formData.location}</p>
           <p>Shift Type: {formData.shiftType}</p>
           <p>Start Time: {new Date(formData.shiftStartTime).toLocaleString()}</p>
           <p>End Time: {new Date(formData.shiftEndTime).toLocaleString()}</p>
         </div>
 
-        <h3 className="font-medium">Team Members</h3>
+        <h3 className="font-medium text-gray-900 dark:text-white">Team Members</h3>
         <div className="pl-4">
           {formData.teamMembers.map((member, index) => (
-            <p key={index} className="text-sm">{member.name} (ID: {member.id})</p>
+            <p key={index} className="text-sm text-gray-600 dark:text-gray-300">
+              {member.name} (ID: {member.id})
+            </p>
           ))}
         </div>
 
         {monitoringEnabled && (
           <>
-            <h3 className="font-medium">CCTV Monitoring Status</h3>
+            <h3 className="font-medium text-gray-900 dark:text-white">CCTV Monitoring Status</h3>
             <div className="pl-4">
               {Object.entries(formData.remoteLocationsChecked).map(([location, data]) => (
-                <p key={location} className="text-sm">
+                <p key={location} className="text-sm text-gray-600 dark:text-gray-300">
                   {location}: {data.status} {data.notes ? `- ${data.notes}` : ''}
                 </p>
               ))}
@@ -101,8 +78,8 @@ const GuardShiftReport = () => {
           </>
         )}
 
-        <h3 className="font-medium">Utility Status</h3>
-        <div className="pl-4 space-y-1 text-sm">
+        <h3 className="font-medium text-gray-900 dark:text-white">Utility Status</h3>
+        <div className="pl-4 space-y-1 text-sm text-gray-600 dark:text-gray-300">
           <p>Electricity: {formData.electricityStatus}</p>
           <p>Water: {formData.waterStatus}</p>
           <p>Office: {formData.officeStatus}</p>
@@ -111,8 +88,8 @@ const GuardShiftReport = () => {
 
         {formData.incidentOccurred && (
           <>
-            <h3 className="font-medium">Incident Details</h3>
-            <div className="pl-4 space-y-1 text-sm">
+            <h3 className="font-medium text-gray-900 dark:text-white">Incident Details</h3>
+            <div className="pl-4 space-y-1 text-sm text-gray-600 dark:text-gray-300">
               <p>Type: {formData.incidentType}</p>
               <p>Time: {formData.incidentTime}</p>
               <p>Location: {formData.incidentLocation}</p>
@@ -124,8 +101,8 @@ const GuardShiftReport = () => {
 
         {formData.notes && (
           <>
-            <h3 className="font-medium">Additional Notes</h3>
-            <p className="pl-4 text-sm">{formData.notes}</p>
+            <h3 className="font-medium text-gray-900 dark:text-white">Additional Notes</h3>
+            <p className="pl-4 text-sm text-gray-600 dark:text-gray-300">{formData.notes}</p>
           </>
         )}
       </div>
@@ -156,7 +133,7 @@ const GuardShiftReport = () => {
 
       {/* Confirmation Dialog */}
       <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Report Submission</AlertDialogTitle>
             <AlertDialogDescription>
@@ -165,8 +142,12 @@ const GuardShiftReport = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmSubmit}>Confirm Submit</AlertDialogAction>
+            <AlertDialogCancel onClick={cancelSubmit}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmSubmit}>
+              Confirm Submit
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -195,7 +176,7 @@ const GuardShiftReport = () => {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={initiateSubmit} className="space-y-6">
             {/* Shift Information */}
             <motion.div
               initial={{ opacity: 0 }}
