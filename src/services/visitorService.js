@@ -76,6 +76,56 @@ export const visitorService = {
     }
   },
 
+  // Function to extract text from image using Tesseract
+export const extractTextFromImage = async (imageData) => {
+  try {
+    const worker = await Tesseract.createWorker();
+    await worker.loadLanguage('eng');
+    await worker.initialize('eng');
+    const { data: { text } } = await worker.recognize(imageData);
+    await worker.terminate();
+    return text;
+  } catch (error) {
+    console.error('OCR Error:', error);
+    throw new Error('Failed to extract text from image');
+  }
+};
+
+// Update your existing checkInVisitor function to handle photo upload
+export const checkInVisitor = async (visitorData, username) => {
+  try {
+    // If there's a photo, convert it to a file
+    let photoFile = null;
+    if (visitorData.photoUrl) {
+      // Convert base64 to file
+      const base64Response = await fetch(visitorData.photoUrl);
+      const blob = await base64Response.blob();
+      photoFile = new File([blob], 'visitor-photo.jpg', { type: 'image/jpeg' });
+    }
+
+    // Create form data
+    const formData = new FormData();
+    formData.append('photo', photoFile);
+    formData.append('visitorData', JSON.stringify(visitorData));
+    formData.append('username', username);
+
+    // Send to your backend
+    const response = await fetch('/api/visitors/check-in', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to check in visitor');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Check-in error:', error);
+    throw error;
+  }
+},
+
   // Get available visitor cards for a department
   async getAvailableCards(departmentId) {
     try {
