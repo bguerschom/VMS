@@ -44,6 +44,27 @@ const GuardShiftReportViewer = () => {
     };
   };
 
+    // Helper function to check if a report has any issues
+  const hasIssues = (report) => {
+    if (!report) return false;
+    
+    // Check utility statuses
+    const hasUtilityIssues = 
+      report.electricity_status === 'issues' ||
+      report.water_status === 'issues' ||
+      report.office_status === 'issues' ||
+      report.parking_status === 'issues';
+
+    // Check monitoring locations if monitoring is enabled
+    const hasMonitoringIssues = 
+      report.monitoring_enabled &&
+      report.remote_locations_checked &&
+      Object.values(report.remote_locations_checked)
+        .some(location => location.status === 'issues');
+
+    return hasUtilityIssues || hasMonitoringIssues;
+  };
+
   // State Management
   const [loading, setLoading] = useState(true);
   const [reports, setReports] = useState([]);
