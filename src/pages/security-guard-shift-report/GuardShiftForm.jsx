@@ -19,7 +19,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "../../components/ui/alert-dialog";
 import { useGuardShiftForm } from './useGuardShiftForm';
 
 // Define location groups
