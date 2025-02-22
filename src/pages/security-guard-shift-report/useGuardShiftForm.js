@@ -9,7 +9,7 @@ export const useGuardShiftForm = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedLocation, setSelectedLocation] = useState('');
   const [newTeamMember, setNewTeamMember] = useState({ id: '', name: '' });
-  const [monitoringEnabled, setMonitoringEnabled] = useState(true);
+  const [monitoringEnabled, setMonitoringEnabled] = useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
   const LOCATION_GROUPS = {
