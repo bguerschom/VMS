@@ -350,30 +350,6 @@ const VisitorForm = () => {
               >
                 {renderPhotoSection()}
                 
-                {/* Photo Section */}
-                <div className="flex flex-col items-center">
-                  <div className="w-40 h-40 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700">
-                    {photoUrl ? (
-                      <img 
-                        src={photoUrl} 
-                        alt="Visitor" 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
-                        <svg
-                          className="w-20 h-20"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                          <circle cx="12" cy="7" r="4" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                </div>
 
                  {/* Personal Information */}
                 <div className="space-y-4">
