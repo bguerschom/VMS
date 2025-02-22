@@ -39,90 +39,76 @@ export const visitorService = {
   },
 
   // Parse Rwandan ID/Passport text
-  parseDocumentText: (text) => {
-    try {
-      console.log('Parsing text:', text);
-      
-      const data = {
-        fullName: '',
-        identityNumber: '',
-        gender: '',
-        nationality: 'Rwandan' // Default for Rwandan IDs
-      };
+parseDocumentText: (text) => {
+  try {
+    console.log('Parsing text:', text);
+    
+    const data = {
+      fullName: '',
+      identityNumber: '',
+      gender: '',
+      nationality: 'Rwandan'
+    };
 
-      // Convert text to lowercase and split into lines
-      const lines = text.toLowerCase().split('\n');
-      
-      // Process each line
-      lines.forEach(line => {
-        line = line.trim();
-        console.log('Processing line:', line);
+    // Convert text to array of lines and process each line
+    const lines = text.split('\n');
+    
+    lines.forEach(line => {
+      line = line.trim();
+      console.log('Processing line:', line);
 
-        // Match patterns for Rwandan ID
-        if (line.includes('names') || line.includes('nom')) {
-          const nameMatch = line.match(/(?:names|nom)[:\s]*(.+)/i);
-          if (nameMatch) {
-            data.fullName = nameMatch[1].trim().toUpperCase();
-            console.log('Found name:', data.fullName);
-          }
-        }
-        
-        // Match ID number patterns (both old and new formats)
-        else if (line.includes('no.') || line.includes('id') || /\d{16}/.test(line)) {
-          const idMatch = line.match(/\d{16}/);
-          if (idMatch) {
-            data.identityNumber = idMatch[0];
-            console.log('Found ID:', data.identityNumber);
-          }
-        }
-        
-        // Match gender/sex
-        else if (line.includes('sex') || line.includes('gender')) {
-          if (line.includes('m')) {
-            data.gender = 'Male';
-          } else if (line.includes('f')) {
-            data.gender = 'Female';
-          }
-          console.log('Found gender:', data.gender);
-        }
-        
-        // Match nationality (for passports)
-        else if (line.includes('nationality') || line.includes('nationalite')) {
-          const nationalityMatch = line.match(/(?:nationality|nationalite)[:\s]*(.+)/i);
-          if (nationalityMatch) {
-            data.nationality = nationalityMatch[1].trim();
-            console.log('Found nationality:', data.nationality);
-          }
-        }
-      });
-
-      // Additional validation and extraction attempts
-      if (!data.fullName) {
-        // Look for capitalized text that might be a name
-        const possibleName = lines.find(line => /^[A-Z][a-z]+ [A-Z][a-z]+/.test(line));
-        if (possibleName) {
-          data.fullName = possibleName.trim().toUpperCase();
-          console.log('Found possible name from format:', data.fullName);
+      // Match name pattern (after "Amazina / Names")
+      if (line.toLowerCase().includes('amazina') || line.toLowerCase().includes('names')) {
+        // Look for the name in the next line or after the label
+        const nextLine = lines[lines.indexOf(line) + 1];
+        const nameMatch = nextLine || line.split(/amazina|names/i)[1];
+        if (nameMatch) {
+          data.fullName = nameMatch.trim();
+          console.log('Found name:', data.fullName);
         }
       }
-
-      if (!data.identityNumber) {
-        // Look for any 16-digit number in the text
-        const fullText = text.replace(/\s/g, '');
-        const idMatch = fullText.match(/\d{16}/);
+      
+      // Match ID number (format: 1 XXXX X XXXXXXX X XX)
+      if (line.toLowerCase().includes('national id no')) {
+        const idMatch = line.match(/\d[\s\d]+\d/);
         if (idMatch) {
-          data.identityNumber = idMatch[0];
-          console.log('Found ID from full text:', data.identityNumber);
+          // Remove spaces from the ID number
+          data.identityNumber = idMatch[0].replace(/\s/g, '');
+          console.log('Found ID:', data.identityNumber);
         }
       }
+      
+      // Match gender (look for "Gabo / M" or "Gore / F")
+      if (line.toLowerCase().includes('igitsina') || line.toLowerCase().includes('sex')) {
+        if (line.includes('Gabo') || line.includes('/ M')) {
+          data.gender = 'Male';
+        } else if (line.includes('Gore') || line.includes('/ F')) {
+          data.gender = 'Female';
+        }
+        console.log('Found gender:', data.gender);
+      }
+    });
 
-      console.log('Final parsed data:', data);
-      return data;
-    } catch (error) {
-      console.error('Document parsing error:', error);
-      throw new Error('Failed to parse document text');
+    // Clean up the results
+    if (data.fullName) {
+      data.fullName = data.fullName
+        .replace(/Amazina|Names|\/|:/gi, '')
+        .trim()
+        .toUpperCase();
     }
-  },
+
+    if (data.identityNumber) {
+      data.identityNumber = data.identityNumber
+        .replace(/[^\d]/g, '');
+    }
+
+    console.log('Final parsed data:', data);
+    return data;
+  } catch (error) {
+    console.error('Document parsing error:', error);
+    throw new Error('Failed to parse document text');
+  }
+}
 
   // Upload captured photo to storage
   uploadPhoto: async (photoData) => {
