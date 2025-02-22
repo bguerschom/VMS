@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Camera } from 'lucide-react';
 import { visitorService } from '../../services/visitorService';
 import { DEPARTMENTS } from '../../utils/constants';
 import { useAuth } from '../../hooks/useAuth';
