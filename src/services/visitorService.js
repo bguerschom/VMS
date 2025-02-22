@@ -13,12 +13,27 @@ export const visitorService = {
       await worker.loadLanguage('eng');
       await worker.initialize('eng');
       
-      // Recognize text from image
-      const { data: { text } } = await worker.recognize(imageData);
+      // Set specific configuration for ID cards
+      await worker.setParameters({
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/: ',
+        preserve_interword_spaces: '1',
+      });
+
+      // Recognize text from image with high quality settings
+      const { data: { text } } = await worker.recognize(imageData, {
+        imageFormat: 'image/jpeg',
+        rectangles: [
+          // Focus on specific areas of the ID card
+          // You might need to adjust these coordinates based on your image
+          { left: 0, top: 0, width: 1000, height: 300 }, // Upper section
+          { left: 0, top: 300, width: 1000, height: 500 } // Lower section
+        ]
+      });
       
-      // Cleanup
+      // Clean up
       await worker.terminate();
       
+      console.log('Extracted text:', text); // For debugging
       return text;
     } catch (error) {
       console.error('OCR Error:', error);
@@ -33,42 +48,79 @@ export const visitorService = {
         fullName: '',
         identityNumber: '',
         gender: '',
-        nationality: ''
+        nationality: 'Rwandan' // Default for Rwandan IDs
       };
 
-      // Split text into lines
-      const lines = text.split('\n');
+      // Convert text to lowercase and split into lines
+      const lines = text.toLowerCase().split('\n');
+      console.log('Processing lines:', lines); // For debugging
 
       // Process each line
       lines.forEach(line => {
-        line = line.toLowerCase().trim();
+        // Remove extra spaces and convert to lowercase
+        line = line.trim().toLowerCase();
+        console.log('Processing line:', line); // For debugging
 
-        // Extract full name
-        if (line.includes('names:') || line.includes('nom:')) {
-          data.fullName = line.split(/names:|nom:/i)[1].trim();
+        // Match patterns for Rwandan ID
+        if (line.includes('names') || line.includes('nom')) {
+          const nameMatch = line.match(/(?:names|nom)\s*:\s*(.+)/i);
+          if (nameMatch) {
+            data.fullName = nameMatch[1].trim().toUpperCase();
+          }
         }
         
-        // Extract ID number
-        else if (line.includes('no:') || line.includes('number:')) {
-          data.identityNumber = line.split(/no:|number:/i)[1].trim()
-            .replace(/[^0-9]/g, ''); // Keep only numbers
+        // Match ID number patterns (both old and new formats)
+        else if (line.includes('no.') || line.includes('id') || /\d{16}/.test(line)) {
+          // Extract 16-digit number
+          const idMatch = line.match(/\d{16}/);
+          if (idMatch) {
+            data.identityNumber = idMatch[0];
+          }
         }
         
-        // Extract gender
-        else if (line.includes('sex:') || line.includes('gender:')) {
-          const gender = line.split(/sex:|gender:/i)[1].trim();
-          data.gender = gender.startsWith('m') ? 'Male' : 'Female';
+        // Match gender/sex
+        else if (line.includes('sex') || line.includes('gender')) {
+          if (line.includes('m')) {
+            data.gender = 'Male';
+          } else if (line.includes('f')) {
+            data.gender = 'Female';
+          }
         }
         
-        // Extract nationality
-        else if (line.includes('nationality:') || line.includes('nationalite:')) {
-          data.nationality = line.split(/nationality:|nationalite:/i)[1].trim();
+        // Match nationality (for passports)
+        else if (line.includes('nationality') || line.includes('nationalite')) {
+          const nationalityMatch = line.match(/(?:nationality|nationalite)\s*:\s*(.+)/i);
+          if (nationalityMatch) {
+            data.nationality = nationalityMatch[1].trim();
+          }
         }
       });
+
+      // Log the extracted data
+      console.log('Extracted data:', data);
+
+      // Additional validation
+      if (!data.fullName && text.length > 0) {
+        // Try to find name in any capitalized text line
+        const lines = text.split('\n');
+        const nameLine = lines.find(line => /^[A-Z\s]+$/.test(line.trim()));
+        if (nameLine) {
+          data.fullName = nameLine.trim();
+        }
+      }
+
+      if (!data.identityNumber) {
+        // Try to find any 16-digit number in the text
+        const idMatch = text.match(/\d{16}/);
+        if (idMatch) {
+          data.identityNumber = idMatch[0];
+        }
+      }
 
       return data;
     } catch (error) {
       console.error('Document parsing error:', error);
+      console.error('Text being parsed:', text);
       throw new Error('Failed to parse document text');
     }
   },
