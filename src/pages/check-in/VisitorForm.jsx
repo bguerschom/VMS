@@ -84,56 +84,67 @@ const VisitorForm = () => {
   const [errors, setErrors] = useState({});
 
 
-    const renderPhotoSection = () => (
-    <div className="flex flex-col items-center">
-      <div className="w-40 h-40 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700">
-        {isPassportUser && !photoUrl ? (
-          <DocumentScanner
-            onScan={(scanData) => {
-              setFormData(prev => ({
-                ...prev,
-                fullName: scanData.fullName || prev.fullName,
-                identityNumber: scanData.identityNumber || prev.identityNumber,
-                gender: scanData.gender || prev.gender,
-                nationality: scanData.nationality || prev.nationality
-              }));
-              setPhotoUrl(scanData.photoUrl);
-              setIsEditable(true); // Allow editing in case OCR wasn't perfect
-            }}
-            onPhotoCapture={(photoUrl) => setPhotoUrl(photoUrl)}
-          />
-        ) : photoUrl ? (
-          <div className="relative group">
+{/* Photo Section */}
+const renderPhotoSection = () => (
+  <div className="flex flex-col items-center">
+    <div className="w-40 h-40 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700">
+      {isPassportUser ? (
+        photoUrl ? (
+          <div className="relative group w-full h-full">
             <img 
               src={photoUrl} 
               alt="Visitor" 
               className="w-full h-full object-cover"
             />
-            {isPassportUser && (
-              <div 
-                className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                onClick={() => setPhotoUrl(null)}
-              >
-                <span className="text-white text-sm">Click to retake</span>
-              </div>
-            )}
+            <div 
+              className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              onClick={() => {
+                setPhotoUrl(null);
+                setFormData(prev => ({
+                  ...prev,
+                  fullName: '',
+                  identityNumber: '',
+                  gender: '',
+                  nationality: ''
+                }));
+              }}
+            >
+              <span className="text-white text-sm">Click to retake</span>
+            </div>
           </div>
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
-            <svg
-              className="w-20 h-20"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-          </div>
-        )}
-      </div>
+          <DocumentScanner
+            onScan={(scanData) => {
+              if (scanData.photoUrl) {
+                setPhotoUrl(scanData.photoUrl);
+                setFormData(prev => ({
+                  ...prev,
+                  fullName: scanData.fullName || prev.fullName,
+                  identityNumber: scanData.identityNumber || prev.identityNumber,
+                  gender: scanData.gender || prev.gender,
+                  nationality: scanData.nationality || prev.nationality
+                }));
+              }
+            }}
+            onPhotoCapture={(photoUrl) => setPhotoUrl(photoUrl)}
+          />
+        )
+      ) : (
+        <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
+          <svg
+            className="w-20 h-20"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+        </div>
+      )}
     </div>
-  );
+  </div>
+);
 
   // Load visitor data and handle #00 case
   useEffect(() => {
@@ -238,45 +249,49 @@ const VisitorForm = () => {
     setErrors(prev => ({ ...prev, department: '', visitorCard: '' }));
   };
 
-  // Form validation
-  const validateForm = () => {
-    const newErrors = {};
+// Form validation
+const validateForm = () => {
+  const newErrors = {};
 
-    // Required fields
-    if (!formData.fullName) newErrors.fullName = 'Full name is required';
-    
-    if (!formData.phoneNumber) {
-      newErrors.phoneNumber = 'Phone number is required';
-    } else if (!formData.phoneNumber.match(/^250\d{9}$/)) {
-      newErrors.phoneNumber = 'Phone number must start with 250 followed by 9 digits';
+  // Photo validation for passport users
+  if (isPassportUser && !photoUrl) {
+    newErrors.photo = 'Please capture a photo of the passport/ID';
+  }
+
+  // Required fields
+  if (!formData.fullName) newErrors.fullName = 'Full name is required';
+  
+  if (!formData.phoneNumber) {
+    newErrors.phoneNumber = 'Phone number is required';
+  } else if (!formData.phoneNumber.match(/^250\d{9}$/)) {
+    newErrors.phoneNumber = 'Phone number must start with 250 followed by 9 digits';
+  }
+
+  // Nationality validation only for passport users
+  if (isPassportUser) {
+    if (!formData.nationality) {
+      newErrors.nationality = 'Nationality is required for passport users';
     }
+  }
 
-    // Nationality validation only for passport users
-    if (isPassportUser) {
-      if (!formData.nationality) {
-        newErrors.nationality = 'Nationality is required for passport users';
-      }
-    }
+  // For passport users (#00), require identity number
+  if (isPassportUser && !formData.identityNumber) {
+    newErrors.identityNumber = 'ID or Passport number is required';
+  }
 
-    // For passport users (#00), require identity number
-    if (isPassportUser && !formData.identityNumber) {
-      newErrors.identityNumber = 'ID or Passport number is required';
-    }
+  if (!formData.department) newErrors.department = 'Department is required';
+  if (!formData.visitorCard) newErrors.visitorCard = 'Visitor card is required';
+  if (!formData.purpose) newErrors.purpose = 'Purpose is required';
 
-    if (!formData.department) newErrors.department = 'Department is required';
-    if (!formData.visitorCard) newErrors.visitorCard = 'Visitor card is required';
-    if (!formData.purpose) newErrors.purpose = 'Purpose is required';
+  // Laptop validation
+  if (hasLaptop) {
+    if (!formData.laptopBrand) newErrors.laptopBrand = 'Laptop brand is required';
+    if (!formData.laptopSerial) newErrors.laptopSerial = 'Serial number is required';
+  }
 
-    // Laptop validation
-    if (hasLaptop) {
-      if (!formData.laptopBrand) newErrors.laptopBrand = 'Laptop brand is required';
-      if (!formData.laptopSerial) newErrors.laptopSerial = 'Serial number is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
