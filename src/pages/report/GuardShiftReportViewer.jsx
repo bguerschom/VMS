@@ -205,6 +205,216 @@ const GuardShiftReportViewer = () => {
     );
   };
 
+  const ReportModal = ({ report, onClose }) => {
+  if (!report) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-y-auto">
+      <div className="min-h-screen px-4 py-8 flex items-center justify-center">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-6xl w-full relative">
+          {/* Modal Header */}
+          <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b dark:border-gray-700 p-6 rounded-t-2xl">
+            <div className="flex justify-between items-center">
+              <div>
+                <div className="flex items-center space-x-3">
+                  <Shield className="w-8 h-8 text-gray-600 dark:text-gray-400" />
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Security Report Details</h2>
+                </div>
+                <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                  <span className="flex items-center">
+                    <Clock className="w-4 h-4 mr-1" />
+                    {new Date(report.created_at).toLocaleString()}
+                  </span>
+                  <span className="flex items-center">
+                    <User className="w-4 h-4 mr-1" />
+                    {report.submitted_by}
+                  </span>
+                  <span className="flex items-center">
+                    <MapPin className="w-4 h-4 mr-1" />
+                    {report.location}
+                  </span>
+                </div>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => exportDetailedReport(report)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                  title="Export Report"
+                >
+                  <Download className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+                </button>
+                <button
+                  onClick={onClose}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                  title="Close"
+                >
+                  <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Modal Content */}
+          <div className="p-6 space-y-6">
+            {/* Basic Info */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 border rounded-lg dark:border-gray-700">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Shift Type</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {report.shift_type.toUpperCase()}
+                </p>
+              </div>
+              <div className="p-4 border rounded-lg dark:border-gray-700">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Team Size</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {report.team_members?.length || 0} Members
+                </p>
+              </div>
+              <div className={`p-4 border rounded-lg ${
+                report.incident_occurred 
+                  ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' 
+                  : 'dark:border-gray-700'
+              }`}>
+                <p className={`text-sm ${
+                  report.incident_occurred 
+                    ? 'text-red-600 dark:text-red-400' 
+                    : 'text-gray-500 dark:text-gray-400'
+                }`}>Status</p>
+                <p className={`text-lg font-semibold ${
+                  report.incident_occurred 
+                    ? 'text-red-700 dark:text-red-300' 
+                    : 'text-gray-900 dark:text-white'
+                }`}>
+                  {report.incident_occurred ? 'Incident Reported' : 'Normal'}
+                </p>
+              </div>
+            </div>
+
+            {/* CCTV Monitoring Status */}
+            {report.monitoring_enabled && (
+              <div className="border rounded-lg dark:border-gray-700 p-6">
+                <div className="flex items-center mb-4">
+                  <Camera className="w-5 h-5 mr-2 text-gray-500 dark:text-gray-400" />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">CCTV Monitoring Status</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Object.entries(report.remote_locations_checked || {}).map(([location, data]) => (
+                    <div key={location} className="p-4 border rounded-lg dark:border-gray-700">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-gray-900 dark:text-white">{location}</span>
+                        <StatusBadge status={data.status} />
+                      </div>
+                      {data.notes && (
+                        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                          {data.notes}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Utility Status */}
+            <div className="border rounded-lg dark:border-gray-700 p-6">
+              <div className="flex items-center mb-4">
+                <Activity className="w-5 h-5 mr-2 text-gray-500 dark:text-gray-400" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Utility Status</h3>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <UtilityStatus icon={Power} label="Electricity" status={report.electricity_status} />
+                <UtilityStatus icon={Droplets} label="Water" status={report.water_status} />
+                <UtilityStatus icon={Building2} label="Office" status={report.office_status} />
+                <UtilityStatus icon={Car} label="Parking" status={report.parking_status} />
+              </div>
+            </div>
+
+            {/* Team Members */}
+            <div className="border rounded-lg dark:border-gray-700 p-6">
+              <div className="flex items-center mb-4">
+                <Users className="w-5 h-5 mr-2 text-gray-500 dark:text-gray-400" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Security Team</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {report.team_members?.map((member, index) => (
+                  <div key={index} className="flex items-center space-x-3 p-4 border rounded-lg dark:border-gray-700">
+                    <UserCircle className="w-10 h-10 text-gray-400" />
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">{member.name}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">ID: {member.id}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Incident Report */}
+            {report.incident_occurred && (
+              <div className="border-2 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 rounded-lg p-6">
+                <div className="flex items-center mb-4">
+                  <AlertTriangle className="w-5 h-5 mr-2 text-red-500" />
+                  <h3 className="text-lg font-semibold text-red-700 dark:text-red-300">
+                    Incident Report
+                  </h3>
+                </div>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-sm text-red-600 dark:text-red-400">Incident Type</p>
+                      <p className="mt-1 text-lg font-medium text-red-700 dark:text-red-300">
+                        {report.incident_type}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-red-600 dark:text-red-400">Time of Incident</p>
+                      <p className="mt-1 text-lg font-medium text-red-700 dark:text-red-300">
+                        {report.incident_time ? 
+                          new Date(report.incident_time).toLocaleString() : 
+                          'Not specified'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-red-600 dark:text-red-400">Description</p>
+                    <p className="mt-2 p-4 bg-white dark:bg-gray-800 rounded-lg border border-red-200 
+                               dark:border-red-800 text-gray-900 dark:text-red-100">
+                      {report.incident_description}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-red-600 dark:text-red-400">Action Taken</p>
+                    <p className="mt-2 p-4 bg-white dark:bg-gray-800 rounded-lg border border-red-200 
+                               dark:border-red-800 text-gray-900 dark:text-red-100">
+                      {report.action_taken}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Notes Section */}
+            {report.notes && (
+              <div className="border rounded-lg dark:border-gray-700 p-6">
+                <div className="flex items-center mb-4">
+                  <FileText className="w-5 h-5 mr-2 text-gray-500 dark:text-gray-400" />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Additional Notes</h3>
+                </div>
+                <div className="p-4 border rounded-lg dark:border-gray-700">
+                  <p className="whitespace-pre-wrap text-gray-600 dark:text-gray-300">
+                    {report.notes}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
   // Data Fetching Functions
   const fetchReports = async () => {
     try {
