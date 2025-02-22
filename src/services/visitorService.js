@@ -1,42 +1,38 @@
 import { supabase } from '../config/supabase';
 import { mockIdApi } from './mockApi';
 import { generateDepartmentCards } from '../utils/constants';
-import Tesseract from 'tesseract.js';
+
+import { createWorker } from 'tesseract.js';
 
 export const visitorService = {
   // Extract text from captured image using Tesseract OCR
   extractTextFromImage: async (imageData) => {
+    let worker = null;
     try {
-      const worker = await Tesseract.createWorker();
+      console.log('Starting OCR process...');
       
-      // Initialize worker with English language
+      // Create a new worker
+      worker = await createWorker();
+      console.log('Worker created');
+
+      // Initialize worker
       await worker.loadLanguage('eng');
       await worker.initialize('eng');
-      
-      // Set specific configuration for ID cards
-      await worker.setParameters({
-        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/: ',
-        preserve_interword_spaces: '1',
-      });
+      console.log('Worker initialized');
 
-      // Recognize text from image with high quality settings
-      const { data: { text } } = await worker.recognize(imageData, {
-        imageFormat: 'image/jpeg',
-        rectangles: [
-          // Focus on specific areas of the ID card
-          // You might need to adjust these coordinates based on your image
-          { left: 0, top: 0, width: 1000, height: 300 }, // Upper section
-          { left: 0, top: 300, width: 1000, height: 500 } // Lower section
-        ]
-      });
-      
-      // Clean up
+      // Recognize text
+      const { data: { text } } = await worker.recognize(imageData);
+      console.log('Text recognized:', text);
+
+      // Cleanup
       await worker.terminate();
       
-      console.log('Extracted text:', text); // For debugging
       return text;
     } catch (error) {
       console.error('OCR Error:', error);
+      if (worker) {
+        await worker.terminate();
+      }
       throw new Error('Failed to extract text from image');
     }
   },
@@ -44,6 +40,8 @@ export const visitorService = {
   // Parse Rwandan ID/Passport text
   parseDocumentText: (text) => {
     try {
+      console.log('Parsing text:', text);
+      
       const data = {
         fullName: '',
         identityNumber: '',
@@ -53,28 +51,27 @@ export const visitorService = {
 
       // Convert text to lowercase and split into lines
       const lines = text.toLowerCase().split('\n');
-      console.log('Processing lines:', lines); // For debugging
-
+      
       // Process each line
       lines.forEach(line => {
-        // Remove extra spaces and convert to lowercase
-        line = line.trim().toLowerCase();
-        console.log('Processing line:', line); // For debugging
+        line = line.trim();
+        console.log('Processing line:', line);
 
         // Match patterns for Rwandan ID
         if (line.includes('names') || line.includes('nom')) {
-          const nameMatch = line.match(/(?:names|nom)\s*:\s*(.+)/i);
+          const nameMatch = line.match(/(?:names|nom)[:\s]*(.+)/i);
           if (nameMatch) {
             data.fullName = nameMatch[1].trim().toUpperCase();
+            console.log('Found name:', data.fullName);
           }
         }
         
         // Match ID number patterns (both old and new formats)
         else if (line.includes('no.') || line.includes('id') || /\d{16}/.test(line)) {
-          // Extract 16-digit number
           const idMatch = line.match(/\d{16}/);
           if (idMatch) {
             data.identityNumber = idMatch[0];
+            console.log('Found ID:', data.identityNumber);
           }
         }
         
@@ -85,42 +82,43 @@ export const visitorService = {
           } else if (line.includes('f')) {
             data.gender = 'Female';
           }
+          console.log('Found gender:', data.gender);
         }
         
         // Match nationality (for passports)
         else if (line.includes('nationality') || line.includes('nationalite')) {
-          const nationalityMatch = line.match(/(?:nationality|nationalite)\s*:\s*(.+)/i);
+          const nationalityMatch = line.match(/(?:nationality|nationalite)[:\s]*(.+)/i);
           if (nationalityMatch) {
             data.nationality = nationalityMatch[1].trim();
+            console.log('Found nationality:', data.nationality);
           }
         }
       });
 
-      // Log the extracted data
-      console.log('Extracted data:', data);
-
-      // Additional validation
-      if (!data.fullName && text.length > 0) {
-        // Try to find name in any capitalized text line
-        const lines = text.split('\n');
-        const nameLine = lines.find(line => /^[A-Z\s]+$/.test(line.trim()));
-        if (nameLine) {
-          data.fullName = nameLine.trim();
+      // Additional validation and extraction attempts
+      if (!data.fullName) {
+        // Look for capitalized text that might be a name
+        const possibleName = lines.find(line => /^[A-Z][a-z]+ [A-Z][a-z]+/.test(line));
+        if (possibleName) {
+          data.fullName = possibleName.trim().toUpperCase();
+          console.log('Found possible name from format:', data.fullName);
         }
       }
 
       if (!data.identityNumber) {
-        // Try to find any 16-digit number in the text
-        const idMatch = text.match(/\d{16}/);
+        // Look for any 16-digit number in the text
+        const fullText = text.replace(/\s/g, '');
+        const idMatch = fullText.match(/\d{16}/);
         if (idMatch) {
           data.identityNumber = idMatch[0];
+          console.log('Found ID from full text:', data.identityNumber);
         }
       }
 
+      console.log('Final parsed data:', data);
       return data;
     } catch (error) {
       console.error('Document parsing error:', error);
-      console.error('Text being parsed:', text);
       throw new Error('Failed to parse document text');
     }
   },
