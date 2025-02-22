@@ -163,7 +163,7 @@ const GuardShiftReport = () => {
             <div className="flex justify-between items-center">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Security Shift Report
+                  Guard Shift Form
                 </h1>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   Submit detailed report of your shift observations and any incidents
