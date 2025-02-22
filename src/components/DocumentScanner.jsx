@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Camera } from 'lucide-react';
 
 const DocumentScanner = ({ onScan, onPhotoCapture }) => {
@@ -7,19 +7,42 @@ const DocumentScanner = ({ onScan, onPhotoCapture }) => {
   const canvasRef = useRef(null);
   const [stream, setStream] = useState(null);
 
-  // Start camera
+  // Cleanup function for camera stream
+  useEffect(() => {
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [stream]);
+
+  // Start camera with proper video initialization
   const startCamera = async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
       });
+      
       setStream(mediaStream);
+      
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        // Wait for video to be ready
+        await new Promise((resolve) => {
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current.play();
+            resolve();
+          };
+        });
         setIsCapturing(true);
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
+      alert('Failed to access camera. Please make sure you have given camera permissions.');
     }
   };
 
@@ -47,72 +70,32 @@ const DocumentScanner = ({ onScan, onPhotoCapture }) => {
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
       // Convert to base64
-      const photoData = canvas.toDataURL('image/jpeg');
+      const photoData = canvas.toDataURL('image/jpeg', 0.8);
       
       // Stop camera after capture
       stopCamera();
 
-      // Process the image
-      processImage(photoData);
-    }
-  };
-
-  // Process captured image for text extraction
-  const processImage = async (imageData) => {
-    try {
-      // Call your OCR service here
-      const result = await extractTextFromImage(imageData);
+      // Send the photo data back
+      onPhotoCapture(photoData);
       
-      // Parse Rwandan ID format
-      const parsedData = parseRwandanID(result);
-      
-      // Send back both the photo and extracted data
+      // For now, just send dummy data for demonstration
+      // In production, you would integrate with actual OCR service
       onScan({
-        photoUrl: imageData,
-        ...parsedData
+        photoUrl: photoData,
+        fullName: '',
+        identityNumber: '',
+        gender: '',
+        nationality: ''
       });
-      
-      onPhotoCapture(imageData);
-    } catch (error) {
-      console.error('Error processing image:', error);
     }
-  };
-
-  // Parse Rwandan ID text
-  const parseRwandanID = (text) => {
-    // Example parsing logic - adjust based on actual Rwandan ID format
-    const data = {
-      fullName: '',
-      identityNumber: '',
-      gender: '',
-      nationality: 'Rwandan' // Default for Rwandan IDs
-    };
-
-    // Add your specific Rwandan ID parsing logic here
-    // This is a simplified example - you'll need to adjust based on actual format
-    const lines = text.split('\n');
-    lines.forEach(line => {
-      if (line.toLowerCase().includes('names:')) {
-        data.fullName = line.split('Names:')[1].trim();
-      }
-      if (line.toLowerCase().includes('no:')) {
-        data.identityNumber = line.split('No:')[1].trim();
-      }
-      if (line.toLowerCase().includes('sex:')) {
-        const sex = line.split('Sex:')[1].trim();
-        data.gender = sex.startsWith('M') ? 'Male' : 'Female';
-      }
-    });
-
-    return data;
   };
 
   return (
-    <div className="relative">
+    <div className="relative w-full h-full">
       {!isCapturing ? (
         <button
           onClick={startCamera}
-          className="w-40 h-40 rounded-full bg-gray-100 dark:bg-gray-700 
+          className="w-full h-full rounded-full bg-gray-100 dark:bg-gray-700 
                      flex items-center justify-center cursor-pointer
                      hover:bg-gray-200 dark:hover:bg-gray-600 
                      transition-colors duration-200"
@@ -120,19 +103,20 @@ const DocumentScanner = ({ onScan, onPhotoCapture }) => {
           <Camera className="w-12 h-12 text-gray-400 dark:text-gray-500" />
         </button>
       ) : (
-        <div className="relative">
+        <div className="relative w-full h-full">
           <video
             ref={videoRef}
             autoPlay
             playsInline
-            className="w-full rounded-lg"
+            className="w-full h-full rounded-full object-cover"
           />
           <button
             onClick={capturePhoto}
-            className="absolute bottom-4 left-1/2 transform -translate-x-1/2
+            className="absolute bottom-2 left-1/2 transform -translate-x-1/2
                        px-4 py-2 bg-black dark:bg-white 
                        text-white dark:text-black rounded-lg
-                       hover:bg-gray-800 dark:hover:bg-gray-200"
+                       hover:bg-gray-800 dark:hover:bg-gray-200
+                       text-sm"
           >
             Capture
           </button>
