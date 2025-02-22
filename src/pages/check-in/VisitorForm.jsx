@@ -293,35 +293,41 @@ const validateForm = () => {
   return Object.keys(newErrors).length === 0;
 };
   // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  // Check photo first for passport users
+  if (isPassportUser && !photoUrl) {
+    showErrorAlert('Please capture a photo of the passport/ID');
+    return;
+  }
+
+  if (!validateForm()) {
+    showErrorAlert('Please fill in all required fields');
+    return;
+  }
+
+  if (!user?.username) {
+    showErrorAlert('User session expired. Please log in again.');
+    return;
+  }
+
+  setIsLoading(true);
+  try {
+    await visitorService.checkInVisitor({
+      ...formData,
+      isPassport: isPassportUser,
+      photoUrl: photoUrl // Make sure to include the photo
+    }, user.username);
     
-    if (!validateForm()) {
-      showErrorAlert('Please fill in all required fields');
-      return;
-    }
-
-    if (!user?.username) {
-      showErrorAlert('User session expired. Please log in again.');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      await visitorService.checkInVisitor({
-        ...formData,
-        isPassport: isPassportUser
-      }, user.username);
-      
-      // Show success alert and then navigate
-      showSuccessAlert('Visitor checked in successfully');
-    } catch (error) {
-      console.error('Check-in error:', error);
-      showErrorAlert(error.message || 'An error occurred during check-in');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    showSuccessAlert('Visitor checked in successfully');
+  } catch (error) {
+    console.error('Check-in error:', error);
+    showErrorAlert(error.message || 'An error occurred during check-in');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // Close alert handler
   const handleCloseAlert = () => {
