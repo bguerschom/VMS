@@ -1,13 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, X, RotateCcw } from 'lucide-react';
+import { Camera, X, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { visitorService } from '../services/visitorService';
 
 const CameraModal = ({ isOpen, onClose, onCapture }) => {
   const [stream, setStream] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState(null);
   const [capturedImage, setCapturedImage] = useState(null);
+  const [manualData, setManualData] = useState({
+    fullName: '',
+    identityNumber: '',
+    gender: 'Male'  // Default to Male since most IDs show "Gabo/M"
+  });
+  const [step, setStep] = useState('capture'); // capture, verify
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -37,11 +41,11 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
         }
       } catch (error) {
         console.error('Error accessing camera:', error);
-        setError('Failed to access camera. Please make sure you have given camera permissions.');
+        alert('Failed to access camera. Please make sure you have given camera permissions.');
       }
     };
 
-    if (isOpen) {
+    if (isOpen && step === 'capture') {
       startCamera();
     }
 
@@ -50,89 +54,65 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
         mediaStream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [isOpen]);
+  }, [isOpen, step]);
 
   const handleClose = () => {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
     }
-    setError(null);
     setCapturedImage(null);
+    setStep('capture');
+    setManualData({
+      fullName: '',
+      identityNumber: '',
+      gender: 'Male'
+    });
     onClose();
   };
 
-  const processImage = async (photoData) => {
-    try {
-      setIsProcessing(true);
-      setError(null);
-      
-      console.log('Starting OCR processing...');
-      
-      // First attempt
-      let extractedText = await visitorService.extractTextFromImage(photoData);
-      let documentData = visitorService.parseDocumentText(extractedText);
-      
-      // If we're missing critical data, try processing again with different settings
-      if (!documentData.fullName || !documentData.identityNumber || !documentData.gender) {
-        console.log('First attempt incomplete, trying with enhanced settings...');
-        extractedText = await visitorService.extractTextFromImage(photoData, true); // Enhanced mode
-        documentData = visitorService.parseDocumentText(extractedText);
-      }
-
-      // Validate the extracted data
-      if (!documentData.fullName || !documentData.identityNumber || !documentData.gender) {
-        setError('Could not read all required information. Please try again with better lighting and alignment.');
-        return false;
-      }
-
-      onCapture({
-        photoUrl: photoData,
-        ...documentData
-      });
-      
-      return true;
-    } catch (error) {
-      console.error('Error processing image:', error);
-      setError('Error processing the image. Please try again.');
-      return false;
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const capturePhoto = async () => {
+  const capturePhoto = () => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
 
-      // Set high resolution
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-
-      // Clear canvas and draw new image
-      context.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Apply image processing for better OCR
-      context.filter = 'contrast(1.2) brightness(1.1) saturate(1.2)';
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      context.filter = 'none';
-
-      // Get high quality image
+      
       const photoData = canvas.toDataURL('image/jpeg', 1.0);
       setCapturedImage(photoData);
       
-      const success = await processImage(photoData);
-      if (success) {
-        handleClose();
+      // Stop camera after capture
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        setStream(null);
       }
+      
+      setStep('verify');
     }
   };
 
-  const retakePhoto = () => {
-    setCapturedImage(null);
-    setError(null);
+  const handleVerification = () => {
+    // Validate the data
+    if (!manualData.fullName || !manualData.identityNumber) {
+      alert('Please fill in both name and ID number');
+      return;
+    }
+
+    if (!manualData.identityNumber.match(/^1\d{15}$/)) {
+      alert('ID number should be 16 digits starting with 1');
+      return;
+    }
+
+    onCapture({
+      photoUrl: capturedImage,
+      ...manualData
+    });
+    
+    handleClose();
   };
 
   return (
@@ -150,7 +130,6 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
             exit={{ scale: 0.95 }}
             className="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-lg overflow-hidden"
           >
-            {/* Close button */}
             <button
               onClick={handleClose}
               className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/70"
@@ -158,64 +137,115 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
               <X size={20} />
             </button>
 
-            {/* Camera view or captured image */}
-            <div className="relative aspect-[4/3]">
-              {!capturedImage ? (
+            {step === 'capture' ? (
+              // Camera View
+              <div className="relative aspect-[4/3]">
                 <video
                   ref={videoRef}
                   autoPlay
                   playsInline
                   className="w-full h-full object-cover"
                 />
-              ) : (
-                <img
-                  src={capturedImage}
-                  alt="Captured ID"
-                  className="w-full h-full object-contain"
-                />
-              )}
-
-              {/* Error message */}
-              {error && (
-                <div className="absolute top-4 left-4 right-4 bg-red-500 text-white px-4 py-2 rounded">
-                  {error}
-                </div>
-              )}
-
-              {/* Action buttons */}
-              <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
-                {!capturedImage ? (
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center">
                   <button
                     onClick={capturePhoto}
-                    disabled={isProcessing}
                     className="px-6 py-2 bg-black dark:bg-white text-white dark:text-black 
-                             rounded-lg shadow-lg hover:bg-opacity-90 
-                             disabled:opacity-50 disabled:cursor-not-allowed"
+                             rounded-lg shadow-lg hover:bg-opacity-90"
                   >
-                    {isProcessing ? 'Processing...' : 'Capture Photo'}
+                    Capture Photo
                   </button>
-                ) : (
+                </div>
+              </div>
+            ) : (
+              // Verification View
+              <div className="p-6 space-y-6">
+                {/* Captured Image Preview */}
+                <div className="relative rounded-lg overflow-hidden">
+                  <img 
+                    src={capturedImage} 
+                    alt="Captured ID" 
+                    className="w-full object-contain"
+                  />
+                </div>
+
+                {/* Manual Data Entry */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Full Name (as shown on ID)
+                    </label>
+                    <input
+                      type="text"
+                      value={manualData.fullName}
+                      onChange={(e) => setManualData(prev => ({
+                        ...prev,
+                        fullName: e.target.value.toUpperCase()
+                      }))}
+                      className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                      placeholder="e.g., BIGIRIMANA GUERSCHOM"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      ID Number (16 digits)
+                    </label>
+                    <input
+                      type="text"
+                      value={manualData.identityNumber}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 16);
+                        setManualData(prev => ({
+                          ...prev,
+                          identityNumber: value
+                        }));
+                      }}
+                      className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                      placeholder="e.g., 1200080015331"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Gender
+                    </label>
+                    <select
+                      value={manualData.gender}
+                      onChange={(e) => setManualData(prev => ({
+                        ...prev,
+                        gender: e.target.value
+                      }))}
+                      className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                    >
+                      <option value="Male">Male (Gabo/M)</option>
+                      <option value="Female">Female (Gore/F)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-end space-x-4 pt-4">
                   <button
-                    onClick={retakePhoto}
-                    className="px-6 py-2 bg-black dark:bg-white text-white dark:text-black 
-                             rounded-lg shadow-lg hover:bg-opacity-90 flex items-center gap-2"
+                    onClick={() => {
+                      setCapturedImage(null);
+                      setStep('capture');
+                    }}
+                    className="px-6 py-2 border rounded-lg text-gray-700 dark:text-white 
+                             hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
-                    <RotateCcw size={16} />
                     Retake Photo
                   </button>
-                )}
+                  <button
+                    onClick={handleVerification}
+                    className="px-6 py-2 bg-black dark:bg-white text-white dark:text-black 
+                             rounded-lg shadow-lg hover:bg-opacity-90 flex items-center space-x-2"
+                  >
+                    <Check size={20} />
+                    <span>Confirm & Save</span>
+                  </button>
+                </div>
               </div>
-            </div>
-
-            {/* Instructions */}
-            <div className="p-4 text-center text-gray-600 dark:text-gray-400">
-              <p className="mb-2">Position the ID/Passport in the frame and ensure:</p>
-              <ul className="text-sm">
-                <li>• Good lighting without glare</li>
-                <li>• All text is clearly visible</li>
-                <li>• ID card fills most of the frame</li>
-              </ul>
-            </div>
+            )}
 
             <canvas ref={canvasRef} className="hidden" />
           </motion.div>
