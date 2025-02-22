@@ -901,7 +901,7 @@ const GuardShiftReportViewer = () => {
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search guard..."
+                placeholder="    Search guard..."
                 value={filters.guard}
                 onChange={(e) => setFilters({ ...filters, guard: e.target.value })}
                 className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
