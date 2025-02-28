@@ -7,7 +7,6 @@ export const useGuardShiftForm = () => {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [selectedLocation, setSelectedLocation] = useState('');
   const [newTeamMember, setNewTeamMember] = useState({ id: '', name: '' });
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
@@ -49,7 +48,10 @@ export const useGuardShiftForm = () => {
     if (newTeamMember.id && newTeamMember.name) {
       setFormData({
         ...formData,
-        teamMembers: [...formData.teamMembers, newTeamMember]
+        teamMembers: [...formData.teamMembers, { 
+          id: newTeamMember.id, 
+          name: newTeamMember.name 
+        }]
       });
       setNewTeamMember({ id: '', name: '' });
     }
@@ -73,20 +75,21 @@ export const useGuardShiftForm = () => {
         shift_start_time: formData.shiftStartTime,
         shift_end_time: formData.shiftEndTime,
         team_members: formData.teamMembers,
-        cctv_status: {
-          status: formData.cctvStatus,
-          issues: formData.cctvIssues || null
-        },
+        monitoring_location: formData.location, // assuming monitoring location is the same as main location
+        monitoring_enabled: true, // You can modify this based on your requirements
+        remote_locations_checked: null, // You can populate this if needed
+        cctv_status: formData.cctvStatus,
+        cctv_issues: formData.cctvIssues,
         electricity_status: formData.electricityStatus,
         water_status: formData.waterStatus,
         office_status: formData.officeStatus,
         parking_status: formData.parkingStatus,
         incident_occurred: formData.incidentOccurred,
-        incident_type: formData.incidentType || null,
-        incident_time: formData.incidentOccurred && formData.incidentTime ? formData.incidentTime : null,
-        incident_location: formData.incidentLocation || null,
-        incident_description: formData.incidentDescription || null,
-        action_taken: formData.actionTaken || null,
+        incident_type: formData.incidentOccurred ? formData.incidentType : null,
+        incident_time: formData.incidentOccurred ? formData.incidentTime : null,
+        incident_location: formData.incidentOccurred ? formData.incidentLocation : null,
+        incident_description: formData.incidentOccurred ? formData.incidentDescription : null,
+        action_taken: formData.incidentOccurred ? formData.actionTaken : null,
         notes: formData.notes || null,
         created_at: new Date().toISOString()
       };
@@ -120,7 +123,6 @@ export const useGuardShiftForm = () => {
         actionTaken: '',
         notes: ''
       });
-      setSelectedLocation('');
     } catch (error) {
       console.error('Error submitting report:', error);
       showToast('Failed to submit report. Please try again.', 'error');
@@ -148,12 +150,10 @@ export const useGuardShiftForm = () => {
     loading,
     toast,
     currentTime,
-    selectedLocation,
     newTeamMember,
     isConfirmDialogOpen,
-    setSelectedLocation,
-    setNewTeamMember,
     setFormData,
+    setNewTeamMember,
     setIsConfirmDialogOpen,
     addTeamMember,
     removeTeamMember,
