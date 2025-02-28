@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Moon, Sun, User, Lock, AlertCircle } from 'lucide-react';
+import { Moon, Sun, User, Lock, AlertCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../config/supabase';
@@ -11,12 +11,14 @@ const PasswordChangeModal = ({ isOpen, onClose, onSubmit, isTemp }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setIsSubmitting(true);
 
     // Comprehensive password validation
     const validationErrors = [];
@@ -47,10 +49,17 @@ const PasswordChangeModal = ({ isOpen, onClose, onSubmit, isTemp }) => {
 
     if (validationErrors.length > 0) {
       setError(validationErrors[0]);
+      setIsSubmitting(false);
       return;
     }
 
-    onSubmit(newPassword);
+    try {
+      await onSubmit(newPassword);
+      setIsSubmitting(false);
+    } catch (err) {
+      setError(err.message || 'Failed to update password');
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -123,16 +132,20 @@ const PasswordChangeModal = ({ isOpen, onClose, onSubmit, isTemp }) => {
             <button
               type="button"
               onClick={onClose}
+              disabled={isSubmitting}
               className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 
-                       dark:hover:text-white transition-colors"
+                       dark:hover:text-white transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
+              disabled={isSubmitting}
               className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg
-                       hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                       hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors 
+                       flex items-center gap-2 disabled:opacity-50"
             >
+              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
               Update Password
             </button>
           </div>
@@ -148,23 +161,37 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [tempUser, setTempUser] = useState(null);
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return document.documentElement.classList.contains('dark');
-  });
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   const navigate = useNavigate();
   const { login, updatePassword, setUser } = useAuth();
 
+  // Initialize dark mode on component mount
+  useEffect(() => {
+    const isDark = document.documentElement.classList.contains('dark');
+    setIsDarkMode(isDark);
+  }, []);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
     try {
       const { 
         error: loginError, 
         passwordChangeRequired, 
-        user: loggedInUser 
+        user: loggedInUser,
+        accountInactive 
       } = await login(username, password);
+      
+      setIsLoading(false);
+
+      if (accountInactive) {
+        setError('Account is not active. Please contact the administrator.');
+        return;
+      }
       
       if (loginError) {
         setError(loginError);
@@ -175,7 +202,7 @@ const LoginPage = () => {
         // Store temporary user for password change
         setTempUser(loggedInUser);
         setShowPasswordChange(true);
-} else {
+      } else {
         // Normal login flow with role-based redirect
         setUser(loggedInUser);
         localStorage.setItem('user', JSON.stringify(loggedInUser));
@@ -185,7 +212,8 @@ const LoginPage = () => {
         navigate(dashboardPath);
       }
     } catch (err) {
-      setError('Invalid username or password');
+      setIsLoading(false);
+      setError('An unexpected error occurred');
     }
   };
 
@@ -203,7 +231,8 @@ const LoginPage = () => {
       
       if (error) {
         setError(error);
-        return;
+
+      return;
       }
 
       // Fetch updated user information
@@ -301,8 +330,9 @@ const LoginPage = () => {
                        transition-colors duration-200"
               placeholder="Username"
               required
+              disabled={isLoading}
             />
-            <span className="absolute inset-y-0 right-3 flex items-center">
+            <span className="absolute inset-y-0 left-3 flex items-center">
               <User className="h-5 w-5 text-gray-400 dark:text-gray-500" />
             </span>
           </div>
@@ -318,19 +348,23 @@ const LoginPage = () => {
                        transition-colors duration-200"
               placeholder="Password"
               required
+              disabled={isLoading}
             />
-            <span className="absolute inset-y-0 right-3 flex items-center">
+            <span className="absolute inset-y-0 left-3 flex items-center">
               <Lock className="h-5 w-5 text-gray-400 dark:text-gray-500" />
             </span>
           </div>
 
           <button 
             type="submit" 
+            disabled={isLoading}
             className="w-full py-3 rounded-lg bg-black dark:bg-white text-white dark:text-black
                      hover:bg-gray-800 dark:hover:bg-gray-100
                      focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white
-                     transition-all duration-200 transform hover:scale-[1.02]"
+                     transition-all duration-200 transform hover:scale-[1.02]
+                     flex items-center justify-center gap-2 disabled:opacity-50"
           >
+            {isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
             Sign In
           </button>
         </form>
