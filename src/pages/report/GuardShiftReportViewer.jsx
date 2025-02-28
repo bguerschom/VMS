@@ -416,99 +416,99 @@ const GuardShiftReportViewer = () => {
 };
 
   // Data Fetching Functions
-  const fetchReports = async () => {
-    try {
-      setLoading(true);
-      let query = supabase
-        .from('guard_shift_reports')
-        .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false });
+const fetchReports = async () => {
+  try {
+    setLoading(true);
+    let query = supabase
+      .from('guard_shift_reports')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false });
 
-      // Apply filters
-      if (filters.startDate) {
-        const startDateTime = new Date(`${filters.startDate}T00:00:00`);
-        query = query.gte('created_at', startDateTime.toISOString());
-      }
-      
-      if (filters.endDate) {
-        const endDateTime = new Date(`${filters.endDate}T23:59:59`);
-        query = query.lte('created_at', endDateTime.toISOString());
-      }
-
-      if (filters.shiftType) {
-        query = query.eq('shift_type', filters.shiftType);
-      }
-
-      if (filters.hasIncident !== '') {
-        query = query.eq('incident_occurred', filters.hasIncident === 'true');
-      }
-
-      if (filters.guard) {
-        query = query.ilike('submitted_by', `%${filters.guard}%`);
-      }
-
-      if (filters.location) {
-        query = query.eq('location', filters.location);
-      }
-
-      // Pagination
-      const start = (currentPage - 1) * reportsPerPage;
-      const end = start + reportsPerPage - 1;
-      query = query.range(start, end);
-
-      const { data, count, error } = await query;
-      
-      if (error) throw error;
-      
-      if (data) {
-        setReports(data);
-        setTotalCount(count || 0);
-        setTotalPages(Math.ceil((count || 0) / reportsPerPage));
-      }
-    } catch (error) {
-      console.error('Error fetching reports:', error);
-    } finally {
-      setLoading(false);
+    // Apply filters
+    if (filters.startDate) {
+      const startDateTime = new Date(`${filters.startDate}T00:00:00`);
+      query = query.gte('created_at', startDateTime.toISOString());
     }
-  };
-
-  const fetchStats = async () => {
-    try {
-      const weekDates = getWeekDates();
-      
-      // Get total reports for the week
-      const { count: totalCount } = await supabase
-        .from('guard_shift_reports')
-        .select('*', { count: 'exact' })
-        .gte('created_at', `${weekDates.startDate}T00:00:00`)
-        .lte('created_at', `${weekDates.endDate}T23:59:59`);
-
-      // Get incident reports for the week
-      const { count: incidentCount } = await supabase
-        .from('guard_shift_reports')
-        .select('*', { count: 'exact' })
-        .eq('incident_occurred', true)
-        .gte('created_at', `${weekDates.startDate}T00:00:00`)
-        .lte('created_at', `${weekDates.endDate}T23:59:59`);
-
-      // Get reports with issues
-      const { count: issuesCount } = await supabase
-        .from('guard_shift_reports')
-        .select('*', { count: 'exact' })
-        .or('electricity_status.eq.issues,water_status.eq.issues,office_status.eq.issues,parking_status.eq.issues')
-        .gte('created_at', `${weekDates.startDate}T00:00:00`)
-        .lte('created_at', `${weekDates.endDate}T23:59:59`);
-
-      setStats({
-        totalReports: totalCount || 0,
-        incidentReports: incidentCount || 0,
-        issuesReports: issuesCount || 0,
-        normalReports: (totalCount || 0) - (incidentCount || 0) - (issuesCount || 0)
-      });
-    } catch (error) {
-      console.error('Error fetching stats:', error);
+    
+    if (filters.endDate) {
+      const endDateTime = new Date(`${filters.endDate}T23:59:59`);
+      query = query.lte('created_at', endDateTime.toISOString());
     }
-  };
+
+    if (filters.shiftType) {
+      query = query.eq('shift_type', filters.shiftType);
+    }
+
+    if (filters.hasIncident !== '') {
+      query = query.eq('incident_occurred', filters.hasIncident === 'true');
+    }
+
+    if (filters.guard) {
+      query = query.ilike('submitted_by', `%${filters.guard}%`);
+    }
+
+    if (filters.location) {
+      query = query.eq('location', filters.location);
+    }
+
+    // Pagination
+    const start = (currentPage - 1) * reportsPerPage;
+    const end = start + reportsPerPage - 1;
+    query = query.range(start, end);
+
+    const { data, count, error } = await query;
+    
+    if (error) throw error;
+    
+    if (data) {
+      setReports(data);
+      setTotalCount(count || 0);
+      setTotalPages(Math.ceil((count || 0) / reportsPerPage));
+    }
+  } catch (error) {
+    console.error('Error fetching reports:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+const fetchStats = async () => {
+  try {
+    const weekDates = getWeekDates();
+    
+    // Get total reports for the week
+    const { count: totalCount } = await supabase
+      .from('guard_shift_reports')
+      .select('*', { count: 'exact' })
+      .gte('created_at', `${weekDates.startDate}T00:00:00`)
+      .lte('created_at', `${weekDates.endDate}T23:59:59`);
+
+    // Get incident reports for the week
+    const { count: incidentCount } = await supabase
+      .from('guard_shift_reports')
+      .select('*', { count: 'exact' })
+      .eq('incident_occurred', true)
+      .gte('created_at', `${weekDates.startDate}T00:00:00`)
+      .lte('created_at', `${weekDates.endDate}T23:59:59`);
+
+    // Get reports with issues
+    const { count: issuesCount } = await supabase
+      .from('guard_shift_reports')
+      .select('*', { count: 'exact' })
+      .or('electricity_status.eq.issues,water_status.eq.issues,office_status.eq.issues,parking_status.eq.issues')
+      .gte('created_at', `${weekDates.startDate}T00:00:00`)
+      .lte('created_at', `${weekDates.endDate}T23:59:59`);
+
+    setStats({
+      totalReports: totalCount || 0,
+      incidentReports: incidentCount || 0,
+      issuesReports: issuesCount || 0,
+      normalReports: (totalCount || 0) - (incidentCount || 0) - (issuesCount || 0)
+    });
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+  }
+};
 
   // Export Functions
   const exportAllReports = async () => {
