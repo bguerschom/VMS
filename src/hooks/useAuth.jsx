@@ -22,8 +22,8 @@ export const AuthProvider = ({ children }) => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
-      // Check if user status is active
-      if (parsedUser.status === 'active') {
+      // Check if user is active
+      if (parsedUser.is_active) {
         setUser(parsedUser);
         resetLogoutTimer();
       } else {
@@ -52,8 +52,8 @@ export const AuthProvider = ({ children }) => {
 
       if (userError) throw new Error('Invalid credentials');
 
-      // Check user status
-      if (userData.status !== 'active') {
+      // Check user active status
+      if (!userData.is_active) {
         return { 
           user: null, 
           error: 'Account is not active. Please contact the administrator.',
@@ -157,7 +157,7 @@ export const AuthProvider = ({ children }) => {
   // Reset logout timer on user activity
   useEffect(() => {
     const resetTimerOnActivity = () => {
-      if (user && user.status === 'active') {
+      if (user && user.is_active) {
         resetLogoutTimer();
       }
     };
