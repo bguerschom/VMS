@@ -22,8 +22,14 @@ export const AuthProvider = ({ children }) => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-      resetLogoutTimer();
+      // Additional check for account status
+      if (parsedUser.account_status === 'active') {
+        setUser(parsedUser);
+        resetLogoutTimer();
+      } else {
+        // Clear user if account is not active
+        logout();
+      }
     }
     setLoading(false);
   }, []);
@@ -32,7 +38,7 @@ export const AuthProvider = ({ children }) => {
     clearTimeout(logoutTimer.current);
     logoutTimer.current = setTimeout(() => {
       logout();
-    }, 5 * 60 * 1000); // 5 minutes
+    }, 5 * 60 * 1000); // 5 minutes of inactivity
   };
 
   const login = async (username, password) => {
@@ -45,6 +51,15 @@ export const AuthProvider = ({ children }) => {
         .single();
 
       if (userError) throw new Error('Invalid credentials');
+
+      // Check account status
+      if (userData.account_status !== 'active') {
+        return { 
+          user: null, 
+          error: 'Account is not active. Please contact the administrator.',
+          accountInactive: true
+        };
+      }
 
       // First check if there's a valid temporary password
       if (userData?.temp_password) {
@@ -141,7 +156,11 @@ export const AuthProvider = ({ children }) => {
 
   // Reset logout timer on user activity
   useEffect(() => {
-    const resetTimerOnActivity = () => resetLogoutTimer();
+    const resetTimerOnActivity = () => {
+      if (user && user.account_status === 'active') {
+        resetLogoutTimer();
+      }
+    };
     
     window.addEventListener('mousemove', resetTimerOnActivity);
     window.addEventListener('keydown', resetTimerOnActivity);
@@ -154,7 +173,7 @@ export const AuthProvider = ({ children }) => {
       window.removeEventListener('click', resetTimerOnActivity);
       window.removeEventListener('scroll', resetTimerOnActivity);
     };
-  }, []);
+  }, [user]);
 
   return (
     <AuthContext.Provider value={{ 
