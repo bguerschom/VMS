@@ -29,10 +29,12 @@ const GuardShiftReport = () => {
     loading, 
     toast,
     currentTime,
-    monitoringEnabled,
+    selectedLocation,
+    newTeamMember,
     isConfirmDialogOpen,
+    setSelectedLocation,
+    setNewTeamMember,
     setFormData,
-    setMonitoringEnabled,
     setIsConfirmDialogOpen,
     addTeamMember,
     removeTeamMember,
@@ -61,22 +63,18 @@ const GuardShiftReport = () => {
           ))}
         </div>
 
-        {monitoringEnabled && (
-          <>
-            <h3 className="font-medium text-gray-900 dark:text-white">CCTV Monitoring</h3>
-            <div className="pl-4 space-y-1 text-sm text-gray-600 dark:text-gray-300">
-              <p>Status: {formData.cctvStatus}</p>
-              {formData.cctvIssues && <p>Issues: {formData.cctvIssues}</p>}
-            </div>
-          </>
-        )}
+        <h3 className="font-medium text-gray-900 dark:text-white">CCTV Monitoring</h3>
+        <div className="pl-4 space-y-1 text-sm text-gray-600 dark:text-gray-300">
+          <p>Status: {formData.cctvStatus}</p>
+          {formData.cctvIssues && <p>Issues: {formData.cctvIssues}</p>}
+        </div>
 
         <h3 className="font-medium text-gray-900 dark:text-white">Utility Status</h3>
         <div className="pl-4 space-y-1 text-sm text-gray-600 dark:text-gray-300">
-          <p>Electricity: {formData.electricityNotes || 'No issues'}</p>
-          <p>Water: {formData.waterNotes || 'No issues'}</p>
-          <p>Office: {formData.officeNotes || 'No issues'}</p>
-          <p>Parking: {formData.parkingNotes || 'No issues'}</p>
+          <p>Electricity: {formData.electricityStatus}</p>
+          <p>Water: {formData.waterStatus}</p>
+          <p>Office: {formData.officeStatus}</p>
+          <p>Parking: {formData.parkingStatus}</p>
         </div>
 
         {formData.incidentOccurred && (
@@ -170,7 +168,7 @@ const GuardShiftReport = () => {
           </div>
 
           <form onSubmit={initiateSubmit} className="space-y-6">
-            {/* Shift Information (unchanged) */}
+            {/* Shift Information */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -204,8 +202,8 @@ const GuardShiftReport = () => {
                 >
                   <option value="">Select Shift</option>
                   <option value="day">Day Shift</option>
-                  <option value="night">Night Shift</option>
-                </select>
+                  <option value="night">Night Shift </option>
+                  </select>
 
                 <input
                   type="datetime-local"
@@ -244,23 +242,23 @@ const GuardShiftReport = () => {
                   <input
                     type="text"
                     placeholder="Security ID"
-                    value={formData.newTeamMemberId || ''}
-                    onChange={(e) => setFormData({...formData, newTeamMemberId: e.target.value})}
+                    value={newTeamMember.id}
+                    onChange={(e) => setNewTeamMember({...newTeamMember, id: e.target.value})}
                     className="flex-1 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
                              dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black"
                   />
                   <input
                     type="text"
                     placeholder="Guard Name"
-                    value={formData.newTeamMemberName || ''}
-                    onChange={(e) => setFormData({...formData, newTeamMemberName: e.target.value})}
+                    value={newTeamMember.name}
+                    onChange={(e) => setNewTeamMember({...newTeamMember, name: e.target.value})}
                     className="flex-1 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
                              dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black"
                   />
                   <button
                     type="button"
                     onClick={addTeamMember}
-                    disabled={!formData.newTeamMemberId || !formData.newTeamMemberName}
+                    disabled={!newTeamMember.id || !newTeamMember.name}
                     className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 
                              transition-colors duration-200 disabled:bg-gray-400"
                   >
@@ -295,67 +293,54 @@ const GuardShiftReport = () => {
               </div>
             </motion.div>
 
-            {/* Remote CCTV Monitoring */}
+            {/* CCTV Monitoring */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
               className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-6"
             >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-                  <Camera className="w-5 h-5 mr-2" />
-                  CCTV Monitoring
-                </h2>
-                
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={monitoringEnabled}
-                    onChange={(e) => setMonitoringEnabled(e.target.checked)}
-                    className="rounded border-gray-300 text-black focus:ring-black"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Enable CCTV Check</span>
-                </label>
-              </div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+                <Camera className="w-5 h-5 mr-2" />
+                CCTV Monitoring
+              </h2>
               
-              {monitoringEnabled && (
-                <div className="space-y-4">
+              <div className="mt-4 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    CCTV Status
+                  </label>
+                  <select
+                    value={formData.cctvStatus}
+                    onChange={(e) => setFormData({ ...formData, cctvStatus: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
+                             dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black"
+                    required
+                  >
+                    <option value="">Select CCTV Status</option>
+                    <option value="fully-functional">Fully Functional</option>
+                    <option value="partial-issue">Partial Issue</option>
+                    <option value="not-working">Not Working</option>
+                  </select>
+                </div>
+
+                {(formData.cctvStatus === 'partial-issue' || formData.cctvStatus === 'not-working') && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      CCTV Working Status
+                      CCTV Issues Description
                     </label>
-                    <select
-                      value={formData.cctvStatus}
-                      onChange={(e) => setFormData({ ...formData, cctvStatus: e.target.value })}
+                    <textarea
+                      value={formData.cctvIssues}
+                      onChange={(e) => setFormData({ ...formData, cctvIssues: e.target.value })}
+                      placeholder="Describe CCTV issues in detail..."
                       className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                               dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black"
-                      required={monitoringEnabled}
-                    >
-                      <option value="">Select CCTV Status</option>
-                      <option value="fully-functional">Fully Functional</option>
-                      <option value="partial-issue">Partial Issue</option>
-                      <option value="not-working">Not Working</option>
-                    </select>
+                               dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black
+                               min-h-[100px]"
+                      required={formData.cctvStatus !== 'fully-functional'}
+                    />
                   </div>
-
-                  {(formData.cctvStatus === 'partial-issue' || formData.cctvStatus === 'not-working') && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Describe CCTV Issues
-                      </label>
-                      <textarea
-                        value={formData.cctvIssues}
-                        onChange={(e) => setFormData({ ...formData, cctvIssues: e.target.value })}
-                        placeholder="Provide details about CCTV issues..."
-                        className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                                 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black
-                                 min-h-[100px]"
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
             </motion.div>
 
             {/* Utility Status */}
@@ -371,70 +356,85 @@ const GuardShiftReport = () => {
               </h2>
               
               <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Electricity Notes */}
+                {/* Electricity Status */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Electricity Notes
+                    Electricity Status
                   </label>
-                  <textarea
-                    value={formData.electricityNotes}
-                    onChange={(e) => setFormData({ ...formData, electricityNotes: e.target.value })}
-                    placeholder="Any electricity-related observations..."
+                  <select
+                    value={formData.electricityStatus}
+                    onChange={(e) => setFormData({ ...formData, electricityStatus: e.target.value })}
                     className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                             dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black
-                             min-h-[100px]"
-                  />
+                             dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black"
+                    required
+                  >
+                    <option value="">Please select status</option>
+                    <option value="normal">Normal</option>
+                    <option value="issues">Issues Present</option>
+                    <option value="outage">Power Outage</option>
+                  </select>
                 </div>
 
-                {/* Water Notes */}
+                {/* Water Status */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Water Notes
+                    Water Status
                   </label>
-                  <textarea
-                    value={formData.waterNotes}
-                    onChange={(e) => setFormData({ ...formData, waterNotes: e.target.value })}
-                    placeholder="Any water-related observations..."
+                  <select
+                    value={formData.waterStatus}
+                    onChange={(e) => setFormData({ ...formData, waterStatus: e.target.value })}
                     className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                             dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black
-                             min-h-[100px]"
-                  />
+                             dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black"
+                    required
+                  >
+                    <option value="">Please select status</option>
+                    <option value="normal">Normal</option>
+                    <option value="issues">Issues Present</option>
+                    <option value="outage">No Water Supply</option>
+                  </select>
                 </div>
 
-                {/* Office Notes */}
+                {/* Office Status */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Office Notes
+                    Office Status
                   </label>
-                  <textarea
-                    value={formData.officeNotes}
-                    onChange={(e) => setFormData({ ...formData, officeNotes: e.target.value })}
-                    placeholder="Any office-related observations..."
+                  <select
+                    value={formData.officeStatus}
+                    onChange={(e) => setFormData({ ...formData, officeStatus: e.target.value })}
                     className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                             dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black
-                             min-h-[100px]"
-                  />
+                             dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black"
+                    required
+                  >
+                    <option value="">Please select status</option>
+                    <option value="normal">Normal</option>
+                    <option value="issues">Issues Present</option>
+                    <option value="closed">Closed</option>
+                  </select>
                 </div>
 
-                {/* Parking Notes */}
+                {/* Parking Status */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Parking Notes
+                    Parking Status
                   </label>
-                  <textarea
-                    value={formData.parkingNotes}
-                    onChange={(e) => setFormData({ ...formData, parkingNotes: e.target.value })}
-                    placeholder="Any parking-related observations..."
+                  <select
+                    value={formData.parkingStatus}
+                    onChange={(e) => setFormData({ ...formData, parkingStatus: e.target.value })}
                     className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                             dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black
-                             min-h-[100px]"
-                  />
+                             dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black"
+                    required
+                  >
+                    <option value="">Please select status</option>
+                    <option value="normal">Normal</option>
+                    <option value="issues">Issues Present</option>
+                    <option value="full">Full</option>
+                  </select>
                 </div>
               </div>
             </motion.div>
 
-            {/* Rest of the component remains the same as in the previous version */}
-            {/* Incident Reporting Section */}
+            {/* Incident Reporting */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -460,7 +460,6 @@ const GuardShiftReport = () => {
 
               {formData.incidentOccurred && (
                 <div className="space-y-4">
-                  {/* Incident details section (unchanged) */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <select
                       value={formData.incidentType}
