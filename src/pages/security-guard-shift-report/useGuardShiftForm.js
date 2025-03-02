@@ -75,9 +75,9 @@ export const useGuardShiftForm = () => {
         shift_start_time: formData.shiftStartTime,
         shift_end_time: formData.shiftEndTime,
         team_members: formData.teamMembers,
-        monitoring_location: formData.location, // assuming monitoring location is the same as main location
-        monitoring_enabled: true, // You can modify this based on your requirements
-        remote_locations_checked: null, // You can populate this if needed
+        monitoring_location: formData.location,
+        monitoring_enabled: true,
+        remote_locations_checked: null, 
         cctv_status: formData.cctvStatus,
         cctv_issues: formData.cctvIssues,
         electricity_status: formData.electricityStatus,
