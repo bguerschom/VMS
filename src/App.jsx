@@ -17,7 +17,7 @@ import VisitorHistory from './pages/visitors-history/VisitorHistory';
 import BulkVisitorUpload from './pages/bulk-upload/BulkVisitorUpload';
 import ActiveScheduledVisitors from './pages/scheduled-visitors/ActiveScheduledVisitors';
 import UserManagement from './pages/UserManagement/UserManagement';
-import GuardShiftReport from './pages/security-guard-shift-report/GuardShiftForm';
+import GuardShiftForm from './pages/security-guard-shift-report/GuardShiftForm';
 import GuardShiftReportViewer from './pages/report/GuardShiftReportViewer';
 import ScheduledVisitorsReport from './pages/report/ScheduledVisitorsReport';
 import CheckInOutReport from './pages/report/CheckInOutReport';
@@ -102,7 +102,7 @@ const App = () => {
       <Route path="/user-management" element={<ProtectedRoute requiredRoles={['admin']}><AuthenticatedLayout><UserManagement /></AuthenticatedLayout></ProtectedRoute>} />
 
       {/* Reports routes */}
-      <Route path="/GuardShiftReport" element={<ProtectedRoute requiredRoles={['admin', 'security_guard', 'supervisor']}><AuthenticatedLayout><GuardShiftReport /></AuthenticatedLayout></ProtectedRoute>} />
+      <Route path="/GuardShiftForm" element={<ProtectedRoute requiredRoles={['admin', 'security_guard', 'supervisor']}><AuthenticatedLayout><GuardShiftForm /></AuthenticatedLayout></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute requiredRoles={['admin', 'supervisor', 'manager']}><AuthenticatedLayout><CheckInOutReport /></AuthenticatedLayout></ProtectedRoute>} />
       <Route path="/GuardShiftReportViewer" element={<ProtectedRoute requiredRoles={['admin', 'supervisor']}><AuthenticatedLayout><GuardShiftReportViewer /></AuthenticatedLayout></ProtectedRoute>} />
       <Route path="/scheduled-report" element={<ProtectedRoute requiredRoles={['admin', 'supervisor', 'manager']}><AuthenticatedLayout><ScheduledVisitorsReport /></AuthenticatedLayout></ProtectedRoute>} />
