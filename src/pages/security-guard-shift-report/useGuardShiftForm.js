@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '../../config/supabase';
+import { useAuth } from '../../hooks/useAuth';
 
 export const useGuardShiftForm = () => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -65,12 +68,41 @@ export const useGuardShiftForm = () => {
     setLoading(true);
     
     try {
-      // Mock successful submission for now
-      // In a real implementation, this is where you would send data to your API
-      console.log('Form submitted with data:', formData);
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Format data for database submission
+      const submissionData = {
+        submitted_by: user?.username || 'unknown',
+        location: formData.location,
+        shift_type: formData.shiftType,
+        shift_start_time: formData.shiftStartTime,
+        shift_end_time: formData.shiftEndTime,
+        team_members: formData.teamMembers,
+        cctv_status: formData.cctvStatus,
+        cctv_issues: formData.cctvIssues || null,
+        electricity_status: formData.electricityStatus,
+        water_status: formData.waterStatus,
+        office_status: formData.officeStatus,
+        parking_status: formData.parkingStatus,
+        incident_occurred: formData.incidentOccurred,
+        incident_type: formData.incidentOccurred ? formData.incidentType : null,
+        incident_time: formData.incidentOccurred ? formData.incidentTime : null,
+        incident_location: formData.incidentOccurred ? formData.incidentLocation : null,
+        incident_description: formData.incidentOccurred ? formData.incidentDescription : null,
+        action_taken: formData.incidentOccurred ? formData.actionTaken : null,
+        notes: formData.notes || null,
+        created_at: new Date().toISOString()
+      };
+
+      console.log('Submitting data to Supabase:', submissionData);
+
+      // Insert data into the guard_shift_reports table
+      const { error: submitError } = await supabase
+        .from('guard_shift_reports')
+        .insert([submissionData]);
+
+      if (submitError) {
+        console.error('Supabase error:', submitError);
+        throw submitError;
+      }
       
       showToast('Report submitted successfully!', 'success');
 
