@@ -9,7 +9,7 @@ export const roleBasedNavigation = {
     },
     { 
       name: 'Guard Shift Report', 
-      path: '/GuardShiftReport', 
+      path: '/GuardShiftForm', 
       icon: ClipboardList
     },
     { 
@@ -93,7 +93,7 @@ export const roleBasedNavigation = {
     },
     { 
       name: 'Guard Shift Report', 
-      path: '/GuardShiftReport', 
+      path: '/GuardShiftForm', 
       icon: ClipboardList
     },
     {
