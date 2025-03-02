@@ -189,8 +189,18 @@ const GuardShiftReport = () => {
                   required
                 >
                   <option value="">Select Location</option>
-                  <option value="nyarutarama">Nyarutarama</option>
-                  <option value="remera">Remera Switch</option>
+                  <option value="Nyarutarama HQ">Nyarutarama HQ</option>
+                  <option value="Remera Switch">Remera Switch</option>
+                  <option value="Kabuga SC">Kabuga Sercice Center</option>
+                  <option value="Kimironko SC">Kimironko Sercice Center</option>
+                  <option value="Giporoso SC">Giporoso Sercice Center</option>
+                  <option value="Kisimenti SC">Kisimenti Sercice Center</option>
+                  <option value="Kicukiro SC">Kicukiro Sercice Center</option>
+                  <option value="KCM SC">KCM Sercice Center</option>
+                  <option value="CHIC SC">CHIC Sercice Center</option>
+                  <option value="Nyamirambo SC">Nyamirambo Sercice Center</option>
+                  <option value="Nyabugogo SC">Nyabugogo Sercice Center</option>
+                  <option value="Gisozi SC">Gisozi Sercice Center</option>
                 </select>
 
                 <select
