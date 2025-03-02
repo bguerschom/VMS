@@ -85,14 +85,6 @@ const GuardShiftForm = () => {
               <p>Description: {formData.incidentDescription}</p>
               <p>Action Taken: {formData.actionTaken}</p>
             </div>
-          </form>
-        </motion.div>
-      </div>
-    </div>
-  );
-};
-
-export default GuardShiftForm;
           </>
         )}
 
@@ -574,3 +566,11 @@ export default GuardShiftForm;
                 Submit Report
               </button>
             </div>
+          </form>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+export default GuardShiftForm;
