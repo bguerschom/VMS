@@ -55,19 +55,12 @@ const GuardShiftReportViewer = () => {
       report.office_status === 'issues' ||
       report.parking_status === 'issues';
 
-    // Check monitoring locations if monitoring is enabled
-    const hasMonitoringIssues = 
-      report.monitoring_enabled &&
-      report.remote_locations_checked &&
-      Object.values(report.remote_locations_checked)
-        .some(location => location.status === 'issues');
-
     // Check CCTV status
     const hasCCTVIssues = 
       report.cctv_status === 'partial-issue' || 
       report.cctv_status === 'not-working';
 
-    return hasUtilityIssues || hasMonitoringIssues || hasCCTVIssues;
+    return hasUtilityIssues || hasCCTVIssues;
   };
 
   // State Management
@@ -211,22 +204,12 @@ const GuardShiftReportViewer = () => {
 
       if (data) {
         const formattedData = data.map(report => {
-          // Prepare remote locations data for export
-          const remoteLocationsString = report.remote_locations_checked 
-            ? Object.entries(report.remote_locations_checked)
-                .map(([location, data]) => `${location}: ${data.status}${data.notes ? ` (${data.notes})` : ''}`)
-                .join('; ')
-            : 'N/A';
-
           return {
             'Date': new Date(report.created_at).toLocaleDateString(),
             'Time': new Date(report.created_at).toLocaleTimeString(),
             'Guard': report.submitted_by,
             'Shift Type': report.shift_type,
-            'Main Location': report.location,
-            'Monitoring Enabled': report.monitoring_enabled ? 'Yes' : 'No',
-            'Monitoring Location': report.monitoring_location || 'N/A',
-            'Remote Locations Status': remoteLocationsString,
+            'Location': report.location,
             'CCTV Status': report.cctv_status || 'N/A',
             'CCTV Issues': report.cctv_issues || 'None',
             'Team Size': report.team_members?.length || 0,
@@ -269,20 +252,6 @@ const GuardShiftReportViewer = () => {
       tempContainer.style.backgroundColor = 'white';
       document.body.appendChild(tempContainer);
 
-      // Prepare remote locations HTML
-      const remoteLocationsHTML = report.monitoring_enabled && report.remote_locations_checked
-        ? Object.entries(report.remote_locations_checked).map(([location, data]) => `
-            <div style="padding: 10px; background: white; border: 1px solid #e5e7eb; border-radius: 8px;">
-              <div style="font-weight: 600; color: #111827;">${location}</div>
-              <div style="color: ${
-                data.status === 'normal' ? '#059669' : 
-                data.status === 'issues' ? '#d97706' : '#dc2626'
-              };">${data.status}</div>
-              ${data.notes ? `<div style="font-size: 14px; color: #6b7280; margin-top: 5px;">${data.notes}</div>` : ''}
-            </div>
-          `).join('')
-        : '<p style="color: #6b7280;">No remote locations monitored</p>';
-
       tempContainer.innerHTML = `
         <div style="font-family: Arial, sans-serif;">
           <!-- Header -->
@@ -296,7 +265,7 @@ const GuardShiftReportViewer = () => {
             </div>
           </div>
 
-                    <!-- Basic Info Cards -->
+          <!-- Basic Info Cards -->
           <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
             <div style="padding: 15px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;">
               <div style="color: #6b7280; font-size: 14px;">Location</div>
@@ -329,22 +298,17 @@ const GuardShiftReportViewer = () => {
           </div>
 
           <!-- CCTV Monitoring Section -->
-          ${report.monitoring_enabled ? `
-            <div style="margin-bottom: 30px; padding: 20px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;">
-              <h2 style="margin: 0 0 15px 0; font-size: 18px; color: #111827;">CCTV Monitoring Status</h2>
-              <div style="margin-bottom: 15px;">
-                <div style="color: #6b7280; font-size: 14px;">CCTV Status</div>
-                <div style="font-size: 16px; color: #111827; margin-top: 5px;">${report.cctv_status || 'N/A'}</div>
-                ${report.cctv_issues ? `
-                  <div style="color: #6b7280; font-size: 14px; margin-top: 10px;">CCTV Issues</div>
-                  <div style="font-size: 16px; color: #111827;">${report.cctv_issues}</div>
-                ` : ''}
-              </div>
-              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
-                ${remoteLocationsHTML}
-              </div>
+          <div style="margin-bottom: 30px; padding: 20px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <h2 style="margin: 0 0 15px 0; font-size: 18px; color: #111827;">CCTV Monitoring Status</h2>
+            <div style="margin-bottom: 15px;">
+              <div style="color: #6b7280; font-size: 14px;">CCTV Status</div>
+              <div style="font-size: 16px; color: #111827; margin-top: 5px;">${report.cctv_status || 'N/A'}</div>
+              ${report.cctv_issues ? `
+                <div style="color: #6b7280; font-size: 14px; margin-top: 10px;">CCTV Issues</div>
+                <div style="font-size: 16px; color: #111827;">${report.cctv_issues}</div>
+              ` : ''}
             </div>
-          ` : ''}
+          </div>
 
           <!-- Utility Status -->
           <div style="margin-bottom: 30px; padding: 20px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;">
@@ -480,11 +444,12 @@ const GuardShiftReportViewer = () => {
         break;
       case 'issues':
       case 'issues present':
+      case 'partial-issue':
         color = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200';
         break;
       case 'offline':
       case 'outage':
-      case 'not working':
+      case 'not-working':
         color = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200';
         break;
       default:
@@ -643,41 +608,24 @@ const GuardShiftReportViewer = () => {
                 </div>
               </div>
 
-              {/* CCTV Monitoring Status */}
-              {report.monitoring_enabled && (
-                <div className="border rounded-lg dark:border-gray-700 p-6">
-                  <div className="flex items-center mb-4">
-                    <Camera className="w-5 h-5 mr-2 text-gray-500 dark:text-gray-400" />
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">CCTV Monitoring Status</h3>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 border rounded-lg dark:border-gray-700">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium text-gray-900 dark:text-white">CCTV Status</span>
-                        <StatusBadge status={report.cctv_status} />
-                      </div>
-                      {report.cctv_issues && (
-                        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                          {report.cctv_issues}
-                        </p>
-                      )}
-                    </div>
-                    {Object.entries(report.remote_locations_checked || {}).map(([location, data]) => (
-                      <div key={location} className="p-4 border rounded-lg dark:border-gray-700">
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium text-gray-900 dark:text-white">{location}</span>
-                          <StatusBadge status={data.status} />
-                        </div>
-                        {data.notes && (
-                          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                            {data.notes}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+              {/* CCTV Status */}
+              <div className="border rounded-lg dark:border-gray-700 p-6">
+                <div className="flex items-center mb-4">
+                  <Camera className="w-5 h-5 mr-2 text-gray-500 dark:text-gray-400" />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">CCTV Status</h3>
                 </div>
-              )}
+                <div className="p-4 border rounded-lg dark:border-gray-700">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-gray-900 dark:text-white">CCTV Status</span>
+                    <StatusBadge status={report.cctv_status} />
+                  </div>
+                  {report.cctv_issues && (
+                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                      {report.cctv_issues}
+                    </p>
+                  )}
+                </div>
+              </div>
 
               {/* Utility Status */}
               <div className="border rounded-lg dark:border-gray-700 p-6">
@@ -693,85 +641,85 @@ const GuardShiftReportViewer = () => {
                 </div>
               </div>
 
-            {/* Team Members */}
-            <div className="border rounded-lg dark:border-gray-700 p-6">
-              <div className="flex items-center mb-4">
-                <Users className="w-5 h-5 mr-2 text-gray-500 dark:text-gray-400" />
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Security Team</h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {report.team_members?.map((member, index) => (
-                  <div key={index} className="flex items-center space-x-3 p-4 border rounded-lg dark:border-gray-700">
-                    <UserCircle className="w-10 h-10 text-gray-400" />
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-white">{member.name}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">ID: {member.id}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Incident Report */}
-            {report.incident_occurred && (
-              <div className="border-2 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 rounded-lg p-6">
-                <div className="flex items-center mb-4">
-                  <AlertTriangle className="w-5 h-5 mr-2 text-red-500" />
-                  <h3 className="text-lg font-semibold text-red-700 dark:text-red-300">
-                    Incident Report
-                  </h3>
-                </div>
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <p className="text-sm text-red-600 dark:text-red-400">Incident Type</p>
-                      <p className="mt-1 text-lg font-medium text-red-700 dark:text-red-300">
-                        {report.incident_type}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-red-600 dark:text-red-400">Time of Incident</p>
-                      <p className="mt-1 text-lg font-medium text-red-700 dark:text-red-300">
-                        {report.incident_time ? 
-                          new Date(report.incident_time).toLocaleString() : 
-                          'Not specified'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-red-600 dark:text-red-400">Description</p>
-                    <p className="mt-2 p-4 bg-white dark:bg-gray-800 rounded-lg border border-red-200 
-                               dark:border-red-800 text-gray-900 dark:text-red-100">
-                      {report.incident_description}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-red-600 dark:text-red-400">Action Taken</p>
-                    <p className="mt-2 p-4 bg-white dark:bg-gray-800 rounded-lg border border-red-200 
-                               dark:border-red-800 text-gray-900 dark:text-red-100">
-                      {report.action_taken}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Notes Section */}
-            {report.notes && (
+              {/* Team Members */}
               <div className="border rounded-lg dark:border-gray-700 p-6">
                 <div className="flex items-center mb-4">
-                  <FileText className="w-5 h-5 mr-2 text-gray-500 dark:text-gray-400" />
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Additional Notes</h3>
+                  <Users className="w-5 h-5 mr-2 text-gray-500 dark:text-gray-400" />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Security Team</h3>
                 </div>
-                <div className="p-4 border rounded-lg dark:border-gray-700">
-                  <p className="whitespace-pre-wrap text-gray-600 dark:text-gray-300">
-                    {report.notes}
-                  </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {report.team_members?.map((member, index) => (
+                    <div key={index} className="flex items-center space-x-3 p-4 border rounded-lg dark:border-gray-700">
+                      <UserCircle className="w-10 h-10 text-gray-400" />
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white">{member.name}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">ID: {member.id}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            )}
+
+              {/* Incident Report */}
+              {report.incident_occurred && (
+                <div className="border-2 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 rounded-lg p-6">
+                  <div className="flex items-center mb-4">
+                    <AlertTriangle className="w-5 h-5 mr-2 text-red-500" />
+                    <h3 className="text-lg font-semibold text-red-700 dark:text-red-300">
+                      Incident Report
+                    </h3>
+                  </div>
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <p className="text-sm text-red-600 dark:text-red-400">Incident Type</p>
+                        <p className="mt-1 text-lg font-medium text-red-700 dark:text-red-300">
+                          {report.incident_type}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-red-600 dark:text-red-400">Time of Incident</p>
+                        <p className="mt-1 text-lg font-medium text-red-700 dark:text-red-300">
+                          {report.incident_time ? 
+                            new Date(report.incident_time).toLocaleString() : 
+                            'Not specified'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-red-600 dark:text-red-400">Description</p>
+                      <p className="mt-2 p-4 bg-white dark:bg-gray-800 rounded-lg border border-red-200 
+                                 dark:border-red-800 text-gray-900 dark:text-red-100">
+                        {report.incident_description}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-red-600 dark:text-red-400">Action Taken</p>
+                      <p className="mt-2 p-4 bg-white dark:bg-gray-800 rounded-lg border border-red-200 
+                                 dark:border-red-800 text-gray-900 dark:text-red-100">
+                        {report.action_taken}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Notes Section */}
+              {report.notes && (
+                <div className="border rounded-lg dark:border-gray-700 p-6">
+                  <div className="flex items-center mb-4">
+                    <FileText className="w-5 h-5 mr-2 text-gray-500 dark:text-gray-400" />
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Additional Notes</h3>
+                  </div>
+                  <div className="p-4 border rounded-lg dark:border-gray-700">
+                    <p className="whitespace-pre-wrap text-gray-600 dark:text-gray-300">
+                      {report.notes}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -834,7 +782,7 @@ const GuardShiftReportViewer = () => {
 
       {/* Filters Section */}
       <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg mb-8">
-      <div className="mb-4 flex items-center space-x-2">
+        <div className="mb-4 flex items-center space-x-2">
           <Filter className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             Filter Reports
@@ -854,8 +802,18 @@ const GuardShiftReportViewer = () => {
                        dark:focus:ring-gray-400"
             >
               <option value="">All Locations</option>
-              <option value="nyarutarama">Nyarutarama</option>
-              <option value="remera">Remera Switch</option>
+              <option value="Nyarutarama HQ">Nyarutarama HQ</option>
+              <option value="Remera Switch">Remera Switch</option>
+              <option value="Kabuga SC">Kabuga Service Center</option>
+              <option value="Kimironko SC">Kimironko Service Center</option>
+              <option value="Giporoso SC">Giporoso Service Center</option>
+              <option value="Kisimenti SC">Kisimenti Service Center</option>
+              <option value="Kicukiro SC">Kicukiro Service Center</option>
+              <option value="KCM SC">KCM Service Center</option>
+              <option value="CHIC SC">CHIC Service Center</option>
+              <option value="Nyamirambo SC">Nyamirambo Service Center</option>
+              <option value="Nyabugogo SC">Nyabugogo Service Center</option>
+              <option value="Gisozi SC">Gisozi Service Center</option>
             </select>
           </div>
 
@@ -1048,19 +1006,18 @@ const GuardShiftReportViewer = () => {
 
                   {/* CCTV Status Column */}
                   <td className="px-4 py-4">
-                    {report.monitoring_enabled ? (
-                      <span className="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium 
-                                     bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">
-                        <Camera className="w-3.5 h-3.5 mr-1" />
-                        Monitoring Active
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium 
-                                     bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-200">
-                        <Camera className="w-3.5 h-3.5 mr-1" />
-                        Not Monitoring
-                      </span>
-                    )}
+                    <span className={`inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium 
+                                   ${report.cctv_status === 'fully-functional' 
+                                     ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
+                                     : report.cctv_status === 'partial-issue'
+                                     ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200'
+                                     : report.cctv_status === 'not-working'
+                                     ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
+                                     : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-200'
+                                   }`}>
+                      <Camera className="w-3.5 h-3.5 mr-1" />
+                      {report.cctv_status || 'Not Specified'}
+                    </span>
                   </td>
 
                   {/* Status Column */}
