@@ -1,168 +1,21 @@
-import { createWorker } from 'tesseract.js';
 import { supabase } from '../config/supabase';
+import { mockIdApi } from './mockApi';
 import { generateDepartmentCards } from '../utils/constants';
 
 export const visitorService = {
-  // Extract text from captured image using Tesseract OCR with coordinate-based recognition
-  extractTextFromImage: async (imageData) => {
-    const worker = await createWorker();
-    
-    try {
-      await worker.loadLanguage('eng');
-      await worker.initialize('eng');
-      
-      // Define exact coordinates for each field
-      // These values might need adjustment based on your image capture size
-      const sections = {
-        name: { top: 120, left: 180, width: 400, height: 40 },    // For "Amazina / Names"
-        gender: { top: 240, left: 180, width: 200, height: 40 },  // For "Igitsina / Sex"
-        idNumber: { top: 360, left: 180, width: 400, height: 40 } // For "ID No."
-      };
-
-      // Set parameters for better text recognition
-      await worker.setParameters({
-        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/abcdefghijklmnopqrstuvwxyz ',
-        preserve_interword_spaces: '1',
-      });
-
-      // Extract text from each section
-      console.log('Extracting name...');
-      const nameResult = await worker.recognize(imageData, {
-        rectangle: sections.name
-      });
-
-      console.log('Extracting gender...');
-      const genderResult = await worker.recognize(imageData, {
-        rectangle: sections.gender
-      });
-
-      console.log('Extracting ID number...');
-      const idResult = await worker.recognize(imageData, {
-        rectangle: sections.idNumber
-      });
-
-      // Process the extracted text
-      const nameText = nameResult.data.text;
-      const genderText = genderResult.data.text;
-      const idText = idResult.data.text;
-
-      console.log('Extracted texts:', {
-        name: nameText,
-        gender: genderText,
-        id: idText
-      });
-
-      // Parse the data
-      const parsedData = visitorService.parseDocumentText({
-        nameText,
-        genderText,
-        idText
-      });
-
-      await worker.terminate();
-      return parsedData;
-
-    } catch (error) {
-      console.error('OCR Error:', error);
-      if (worker) {
-        await worker.terminate();
-      }
-      throw error;
-    }
-  },
-
-  // Parse extracted text into structured data
-  parseDocumentText: ({ nameText, genderText, idText }) => {
-    try {
-      const data = {
-        fullName: '',
-        identityNumber: '',
-        gender: '',
-        nationality: 'Rwandan'
-      };
-
-      // Extract name
-      const nameLines = nameText.split('\n');
-      for (const line of nameLines) {
-        if (line.includes('AMAZINA') || line.includes('NAMES')) {
-          const nextLine = nameLines[nameLines.indexOf(line) + 1];
-          if (nextLine) {
-            data.fullName = nextLine.trim();
-            break;
-          }
-        } else if (/^[A-Z\s]+$/.test(line.trim())) {
-          // If we find a line with all capitals, it's likely the name
-          data.fullName = line.trim();
-          break;
-        }
-      }
-
-      // Extract gender
-      if (genderText.toLowerCase().includes('gabo') || genderText.toLowerCase().includes('m')) {
-        data.gender = 'Male';
-      } else if (genderText.toLowerCase().includes('gore') || genderText.toLowerCase().includes('f')) {
-        data.gender = 'Female';
-      }
-
-      // Extract ID number
-      const idMatch = idText.match(/1\d{15}/) || idText.match(/1[\s\d]{15}/);
-      if (idMatch) {
-        data.identityNumber = idMatch[0].replace(/\s/g, '');
-      }
-
-      // Validate extracted data
-      if (!data.fullName || !data.identityNumber || !data.gender) {
-        console.log('Validation failed:', data);
-        throw new Error('Could not extract all required fields');
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Document parsing error:', error);
-      throw error;
-    }
-  },
-
-  // Upload photo to storage
-  uploadPhoto: async (photoData) => {
-    try {
-      // Convert base64 to blob
-      const base64Response = await fetch(photoData);
-      const blob = await base64Response.blob();
-
-      // Generate unique filename
-      const filename = `visitor-photos/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
-
-      // Upload to Supabase storage
-      const { data, error } = await supabase.storage
-        .from('visitors')
-        .upload(filename, blob, {
-          contentType: 'image/jpeg',
-          cacheControl: '3600'
-        });
-
-      if (error) throw error;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('visitors')
-        .getPublicUrl(filename);
-
-      return publicUrl;
-    } catch (error) {
-      console.error('Photo upload error:', error);
-      throw error;
-    }
-  },
-
   // Search for a visitor
   searchVisitor: async (searchTerm) => {
     try {
+      console.log('Search initiated with term:', searchTerm);
+
+      // Handle passport case
       if (searchTerm === '#00') {
+        console.log('Passport case detected');
         return { isPassport: true };
       }
 
-      // Check for active check-in
+      // First check if visitor is already checked in
+      console.log('Checking for active check-in...');
       const { data: activeVisitor, error: activeError } = await supabase
         .from('visitors')
         .select('*')
@@ -170,50 +23,84 @@ export const visitorService = {
         .is('check_out_time', null)
         .single();
 
+      if (activeError) {
+        console.log('Active visitor query error:', activeError);
+      }
+
       if (activeVisitor) {
+        console.log('Found active visitor:', activeVisitor);
         return {
           error: 'Visitor already has an active check-in',
           activeVisitor
         };
       }
 
-      // Get visitor history
-      const { data: visitorHistory } = await supabase
-        .from('visitors')
-        .select('*')
-        .or(`identity_number.eq.${searchTerm},phone_number.eq.${searchTerm}`)
-        .order('check_in_time', { ascending: false })
-        .limit(1);
+      // Search in mock API
+      console.log('Searching in mock API...');
+      const apiResponse = await mockIdApi.searchPerson(searchTerm);
+      console.log('Mock API Response:', apiResponse);
 
-      return visitorHistory?.length > 0
-        ? { ...visitorHistory[0], isNewVisitor: false }
-        : { isNewVisitor: true };
+      if (apiResponse.success) {
+        console.log('Mock API found the visitor');
 
+        // Get visitor history
+        console.log('Fetching visitor history...');
+        const { data: visitorHistory, error: historyError } = await supabase
+          .from('visitors')
+          .select('*')
+          .or(`identity_number.eq.${searchTerm},phone_number.eq.${searchTerm}`)
+          .order('check_in_time', { ascending: false })
+          .limit(1);
+
+        if (historyError) {
+          console.log('History fetch error:', historyError);
+        }
+
+        console.log('Visitor history:', visitorHistory);
+
+        const result = {
+          ...apiResponse.data,
+          isNewVisitor: !visitorHistory?.length,
+          lastVisit: visitorHistory?.[0]
+        };
+
+        console.log('Returning result:', result);
+        return result;
+      }
+
+      console.log('No visitor found in mock API');
+      return null;
     } catch (error) {
       console.error('Visitor search error:', error);
-      throw error;
+      throw new Error(`Search failed: ${error.message}`);
     }
   },
 
-  // Get available visitor cards
+  // Get available visitor cards for a department
   async getAvailableCards(departmentId) {
     try {
+      // Get all possible cards for the department
       const allCards = generateDepartmentCards(departmentId);
+      
+      // Get cards currently in use
       const { data: inUseCards } = await supabase
         .from('visitors')
         .select('visitor_card')
         .eq('department', departmentId)
         .is('check_out_time', null);
 
+      // Filter out cards that are in use
       const inUseCardSet = new Set(inUseCards?.map(v => v.visitor_card) || []);
-      return allCards.filter(card => !inUseCardSet.has(card));
+      const availableCards = allCards.filter(card => !inUseCardSet.has(card));
+
+      return availableCards;
     } catch (error) {
       console.error('Error getting available cards:', error);
       throw error;
     }
   },
 
-  // Get used cards
+  // Get used cards for a department
   async getUsedCards(departmentId) {
     try {
       const { data: inUseCards, error } = await supabase
@@ -223,6 +110,7 @@ export const visitorService = {
         .is('check_out_time', null);
 
       if (error) throw error;
+
       return inUseCards?.map(v => v.visitor_card) || [];
     } catch (error) {
       console.error('Error getting used cards:', error);
@@ -230,18 +118,19 @@ export const visitorService = {
     }
   },
 
-  // Check in visitor
+  // Create new visitor check-in
   async checkInVisitor(visitorData, username) {
     try {
-      // Verify card availability
+      // Verify card is still available
       const availableCards = await this.getAvailableCards(visitorData.department);
       if (!availableCards.includes(visitorData.visitorCard)) {
         throw new Error('Selected visitor card is no longer available');
       }
 
+      // If it's a passport visitor or new visitor, get a fresh photo URL
       let photoUrl = null;
-      if (visitorData.photoUrl) {
-        photoUrl = await this.uploadPhoto(visitorData.photoUrl);
+      if (!visitorData.isPassport && visitorData.identityNumber) {
+        photoUrl = await mockIdApi.getPhoto(visitorData.identityNumber);
       }
 
       const checkInData = {
@@ -249,7 +138,7 @@ export const visitorService = {
         identity_number: visitorData.identityNumber,
         gender: visitorData.gender,
         phone_number: visitorData.phoneNumber,
-        nationality: visitorData.nationality,
+        nationality: visitorData.isPassport ? visitorData.nationality : null,
         visitor_card: visitorData.visitorCard,
         department: visitorData.department,
         purpose: visitorData.purpose,
@@ -258,8 +147,7 @@ export const visitorService = {
         laptop_serial: visitorData.laptopSerial || null,
         check_in_by: username,
         has_laptop: !!visitorData.laptopBrand,
-        is_passport: visitorData.isPassport || false,
-        photo_url: photoUrl
+        is_passport: visitorData.isPassport || false
       };
 
       const { data, error } = await supabase
@@ -294,7 +182,98 @@ export const visitorService = {
       console.error('Error checking out visitor:', error);
       throw error;
     }
+  },
+
+  // Get active visitors
+  async getActiveVisitors() {
+    try {
+      const { data, error } = await supabase
+        .from('visitors')
+        .select('*')
+        .is('check_out_time', null)
+        .order('check_in_time', { ascending: false });
+
+      if (error) throw error;
+
+      // Get fresh photos for all visitors
+      const visitorsWithPhotos = await Promise.all(
+        data.map(async (visitor) => {
+          if (visitor.identity_number) {
+            const photoUrl = await mockIdApi.getPhoto(visitor.identity_number);
+            return { ...visitor, photoUrl };
+          }
+          return visitor;
+        })
+      );
+
+      return visitorsWithPhotos;
+    } catch (error) {
+      console.error('Error getting active visitors:', error);
+      throw error;
+    }
+  },
+
+  // Get visitor history
+  async getVisitorHistory(searchParams) {
+    try {
+      let query = supabase
+        .from('visitors')
+        .select('*')
+        .order('check_in_time', { ascending: false });
+
+      // Apply filters
+      if (searchParams.department) {
+        query = query.eq('department', searchParams.department);
+      }
+
+      if (searchParams.dateRange) {
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        switch (searchParams.dateRange) {
+          case 'today':
+            query = query.gte('check_in_time', startOfDay.toISOString());
+            break;
+          case 'week':
+            const startOfWeek = new Date(startOfDay);
+            startOfWeek.setDate(startOfDay.getDate() - startOfDay.getDay());
+            query = query.gte('check_in_time', startOfWeek.toISOString());
+            break;
+          case 'month':
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            query = query.gte('check_in_time', startOfMonth.toISOString());
+            break;
+        }
+      }
+
+      // Add pagination
+      if (searchParams.page && searchParams.limit) {
+        const from = searchParams.page * searchParams.limit;
+        query = query.range(from, from + searchParams.limit - 1);
+      }
+
+      const { data, error, count } = await query;
+
+      if (error) throw error;
+
+      // Get fresh photos for visitors with ID numbers
+      const visitorsWithPhotos = await Promise.all(
+        data.map(async (visitor) => {
+          if (visitor.identity_number) {
+            const photoUrl = await mockIdApi.getPhoto(visitor.identity_number);
+            return { ...visitor, photoUrl };
+          }
+          return visitor;
+        })
+      );
+
+      return {
+        visitors: visitorsWithPhotos,
+        total: count
+      };
+    } catch (error) {
+      console.error('Error getting visitor history:', error);
+      throw error;
+    }
   }
 };
-
-export default visitorService;
