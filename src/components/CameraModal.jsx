@@ -2,11 +2,31 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Camera, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// Mock passport OCR service - in a real app, you would use a real OCR service API
+const mockPassportOcr = async (imageData) => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  
+  // In a real implementation, this would send the image to an OCR API
+  // and return the extracted data. For now, we'll return mock data
+  return {
+    success: true,
+    data: {
+      fullName: 'John Smith',
+      identityNumber: 'AB123456789',
+      gender: 'Male',
+      nationality: 'British'
+    }
+  };
+};
+
 const CameraModal = ({ isOpen, onClose, onCapture }) => {
   const [stream, setStream] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [isInitializing, setIsInitializing] = useState(false);
+  const [capturedImage, setCapturedImage] = useState(null);
+  const [extractedData, setExtractedData] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -91,6 +111,8 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
     }
     setError(null);
     setIsInitializing(false);
+    setCapturedImage(null);
+    setExtractedData(null);
     onClose();
   };
 
@@ -100,6 +122,8 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
       setStream(null);
     }
     setError(null);
+    setCapturedImage(null);
+    setExtractedData(null);
     initializeCamera();
   };
 
@@ -116,24 +140,34 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
       const photoData = canvas.toDataURL('image/jpeg', 1.0);
+      setCapturedImage(photoData);
+      
+      // Process the passport image with OCR
       setIsProcessing(true);
-
-      // Send back the captured photo
-      onCapture({
-        photoUrl: photoData,
-        fullName: '',
-        identityNumber: '',
-        gender: '',
-        nationality: 'Rwandan'
-      });
-
-      handleClose();
+      const ocrResult = await mockPassportOcr(photoData);
+      
+      if (ocrResult.success) {
+        setExtractedData(ocrResult.data);
+      } else {
+        setError('Failed to extract passport data. Please try again with a clearer image.');
+      }
     } catch (err) {
       console.error('Photo capture error:', err);
       setError('Failed to capture photo. Please try again.');
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const confirmAndSubmit = () => {
+    if (!capturedImage || !extractedData) return;
+    
+    onCapture({
+      photoUrl: capturedImage,
+      ...extractedData
+    });
+    
+    handleClose();
   };
 
   return (
@@ -171,6 +205,53 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
                     Retry Camera Access
                   </button>
                 </div>
+              ) : capturedImage ? (
+                // Display captured passport image with extracted data
+                <div className="absolute inset-0 flex flex-col">
+                  <div className="relative flex-1">
+                    <img 
+                      src={capturedImage} 
+                      alt="Captured passport" 
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  
+                  {isProcessing ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-4 border-black dark:border-white border-t-transparent mx-auto mb-2"></div>
+                        <p className="text-sm">Extracting passport data...</p>
+                      </div>
+                    </div>
+                  ) : extractedData ? (
+                    <div className="p-4 bg-gray-100 dark:bg-gray-700">
+                      <h3 className="font-medium mb-2 text-gray-900 dark:text-white">Extracted Data</h3>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <p className="text-gray-600 dark:text-gray-300">Name: <span className="font-medium text-gray-900 dark:text-white">{extractedData.fullName}</span></p>
+                        <p className="text-gray-600 dark:text-gray-300">ID: <span className="font-medium text-gray-900 dark:text-white">{extractedData.identityNumber}</span></p>
+                        <p className="text-gray-600 dark:text-gray-300">Gender: <span className="font-medium text-gray-900 dark:text-white">{extractedData.gender}</span></p>
+                        <p className="text-gray-600 dark:text-gray-300">Nationality: <span className="font-medium text-gray-900 dark:text-white">{extractedData.nationality}</span></p>
+                      </div>
+                      <div className="mt-3 flex justify-between">
+                        <button
+                          onClick={() => {
+                            setCapturedImage(null);
+                            setExtractedData(null);
+                          }}
+                          className="px-3 py-1 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500"
+                        >
+                          Retake
+                        </button>
+                        <button
+                          onClick={confirmAndSubmit}
+                          className="px-3 py-1 bg-black dark:bg-white text-white dark:text-black rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
+                        >
+                          Confirm & Use
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
               ) : (
                 <>
                   <video
@@ -184,15 +265,22 @@ const CameraModal = ({ isOpen, onClose, onCapture }) => {
                       <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
                     </div>
                   ) : (
-                    <div className="absolute bottom-4 left-0 right-0 flex justify-center">
-                      <button
-                        onClick={capturePhoto}
-                        disabled={isProcessing}
-                        className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 
-                                 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isProcessing ? "Processing..." : "Capture Photo"}
-                      </button>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      {/* Passport alignment guide */}
+                      <div className="border-2 border-white border-dashed rounded-lg w-4/5 h-3/5 flex items-center justify-center">
+                        <p className="text-white text-shadow text-sm">Align passport here</p>
+                      </div>
+                      
+                      <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+                        <button
+                          onClick={capturePhoto}
+                          disabled={isProcessing}
+                          className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 
+                                  disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Capture Passport
+                        </button>
+                      </div>
                     </div>
                   )}
                 </>
