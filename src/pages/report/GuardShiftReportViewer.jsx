@@ -364,7 +364,7 @@ const exportDetailedReport = async (report) => {
         </div>
 
         <!-- CCTV Monitoring Section -->
-        <div style="position: absolute; left: 58px; top: 330px; right: 20px; border-top: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0; padding-top: 10px;">
+        <div style="position: absolute; left: 58px; top: 330px; right: 20px; border-top: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0;">
           <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; font-weight: bold;">CCTV Monitoring</h2>
           
           <div style="display: flex; margin-bottom: 10px;">
@@ -409,7 +409,7 @@ const exportDetailedReport = async (report) => {
         </div>
 
         <!-- Utility Status Section -->
-        <div style="position: absolute; left: 58px; top: 420px; right: 20px; padding-top: 10px; border-bottom: 1px solid #e0e0e0;">
+        <div style="position: absolute; left: 58px; top: 420px; right: 20px; border-bottom: 1px solid #e0e0e0;">
           <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; font-weight: bold;">Utility Status</h2>
           
           <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
