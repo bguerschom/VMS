@@ -59,10 +59,12 @@ const GuardShiftReportViewer = () => {
     const hasCCTVIssues = 
       report.cctv_status === 'partial-issue' || 
       report.cctv_status === 'not-working';
+      
+    // We don't consider 'not-supervised' as an issue since it may be a valid operational situation
+    // It will be displayed with its own status badge
 
     return hasUtilityIssues || hasCCTVIssues;
   };
-
   // State Management
   const [loading, setLoading] = useState(true);
   const [reports, setReports] = useState([]);
@@ -189,7 +191,6 @@ const GuardShiftReportViewer = () => {
       console.error('Error fetching stats:', error);
     }
   };
-
   // Export All Reports Function
   const exportAllReports = async () => {
     try {
@@ -204,6 +205,17 @@ const GuardShiftReportViewer = () => {
 
       if (data) {
         const formattedData = data.map(report => {
+          // Format CCTV supervision reason
+          let supervisionReason = '';
+          if (report.cctv_status === 'not-supervised') {
+            supervisionReason = 
+              report.cctv_supervision_reason === 'staff-shortage' ? 'Staff Shortage' :
+              report.cctv_supervision_reason === 'emergency-elsewhere' ? 'Handling Emergency Elsewhere' :
+              report.cctv_supervision_reason === 'no-access' ? 'No Access to CCTV Room' :
+              report.cctv_supervision_reason === 'other' ? `Other: ${report.cctv_supervision_other_reason || ''}` :
+              report.cctv_supervision_reason || 'Not specified';
+          }
+          
           return {
             'Date': new Date(report.created_at).toLocaleDateString(),
             'Time': new Date(report.created_at).toLocaleTimeString(),
@@ -211,6 +223,7 @@ const GuardShiftReportViewer = () => {
             'Shift Type': report.shift_type,
             'Location': report.location,
             'CCTV Status': report.cctv_status || 'N/A',
+            'CCTV Supervision Reason': supervisionReason,
             'CCTV Issues': report.cctv_issues || 'None',
             'Team Size': report.team_members?.length || 0,
             'Electricity': report.electricity_status,
@@ -242,7 +255,6 @@ const GuardShiftReportViewer = () => {
       setLoading(false);
     }
   };
-
   // Export Detailed Report Function
   const exportDetailedReport = async (report) => {
     try {
@@ -303,6 +315,21 @@ const GuardShiftReportViewer = () => {
             <div style="margin-bottom: 15px;">
               <div style="color: #6b7280; font-size: 14px;">CCTV Status</div>
               <div style="font-size: 16px; color: #111827; margin-top: 5px;">${report.cctv_status || 'N/A'}</div>
+              
+              ${report.cctv_status === 'not-supervised' ? `
+                <div style="color: #6b7280; font-size: 14px; margin-top: 10px;">Supervision Reason</div>
+                <div style="font-size: 16px; color: #111827;">
+                  ${report.cctv_supervision_reason === 'staff-shortage' ? 'Staff Shortage' :
+                    report.cctv_supervision_reason === 'emergency-elsewhere' ? 'Handling Emergency Elsewhere' :
+                    report.cctv_supervision_reason === 'no-access' ? 'No Access to CCTV Room' :
+                    report.cctv_supervision_reason === 'other' ? 'Other Reason' :
+                    report.cctv_supervision_reason || 'Not specified'}
+                </div>
+                ${report.cctv_supervision_reason === 'other' && report.cctv_supervision_other_reason ? `
+                  <div style="font-size: 16px; color: #111827;">${report.cctv_supervision_other_reason}</div>
+                ` : ''}
+              ` : ''}
+              
               ${report.cctv_issues ? `
                 <div style="color: #6b7280; font-size: 14px; margin-top: 10px;">CCTV Issues</div>
                 <div style="font-size: 16px; color: #111827;">${report.cctv_issues}</div>
@@ -422,7 +449,6 @@ const GuardShiftReportViewer = () => {
       console.error('Error exporting report:', error);
     }
   };
-
   // Helper Components
   const StatusCard = ({ icon: Icon, label, value, color }) => (
     <div className={`flex items-center p-4 rounded-lg border ${color} bg-opacity-10`}>
@@ -451,6 +477,9 @@ const GuardShiftReportViewer = () => {
       case 'outage':
       case 'not-working':
         color = 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200';
+        break;
+      case 'not-supervised':
+        color = 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200';
         break;
       default:
         color = 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-200';
@@ -522,7 +551,6 @@ const GuardShiftReportViewer = () => {
       </div>
     );
   };
-
   const ReportModal = ({ report, onClose }) => {
     if (!report) return null;
 
@@ -619,10 +647,34 @@ const GuardShiftReportViewer = () => {
                     <span className="font-medium text-gray-900 dark:text-white">CCTV Status</span>
                     <StatusBadge status={report.cctv_status} />
                   </div>
+                  
+                  {report.cctv_status === 'not-supervised' && (
+                    <div className="mt-4">
+                      <div className="font-medium text-gray-900 dark:text-white mb-2">Reason</div>
+                      <div className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          {report.cctv_supervision_reason === 'staff-shortage' ? 'Staff Shortage' :
+                           report.cctv_supervision_reason === 'emergency-elsewhere' ? 'Handling Emergency Elsewhere' :
+                           report.cctv_supervision_reason === 'no-access' ? 'No Access to CCTV Room' :
+                           report.cctv_supervision_reason === 'other' ? 'Other Reason' :
+                           report.cctv_supervision_reason || 'Not specified'}
+                        </p>
+                        {report.cctv_supervision_reason === 'other' && report.cctv_supervision_other_reason && (
+                          <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
+                            {report.cctv_supervision_other_reason}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
                   {report.cctv_issues && (
-                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                      {report.cctv_issues}
-                    </p>
+                    <div className="mt-4">
+                      <div className="font-medium text-gray-900 dark:text-white mb-2">Issues Description</div>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        {report.cctv_issues}
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>
@@ -726,7 +778,6 @@ const GuardShiftReportViewer = () => {
       </div>
     );
   };
-
   // Dashboard Header Component
   const DashboardHeader = () => (
     <>
@@ -919,139 +970,7 @@ const GuardShiftReportViewer = () => {
       </div>
     </>
   );
-
-  // Reports Table Component
-  const ReportsTable = () => (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-gray-50 dark:bg-gray-700">
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 dark:text-gray-300">
-                Date & Time
-              </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 dark:text-gray-300">
-                Submitted By
-              </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 dark:text-gray-300">
-                Location
-              </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 dark:text-gray-300">
-                CCTV Status
-              </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 dark:text-gray-300">
-                Report Status
-              </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 dark:text-gray-300">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {loading ? (
-              <tr>
-                <td colSpan="6" className="px-4 py-8 text-center">
-                  <div className="flex justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black dark:border-white"></div>
-                  </div>
-                </td>
-              </tr>
-            ) : reports.length === 0 ? (
-              <tr>
-                <td colSpan="6" className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                  No reports found
-                </td>
-              </tr>
-            ) : (
-              reports.map((report) => (
-                <tr 
-                  key={report.id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  {/* Date & Time Column */}
-                  <td className="px-4 py-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {new Date(report.created_at).toLocaleDateString()}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {new Date(report.created_at).toLocaleTimeString()}
-                      </p>
-                    </div>
-                  </td>
-
-                  {/* Guard Column */}
-                  <td className="px-4 py-4">
-                    <div className="flex items-center">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {report.submitted_by}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {report.shift_type === 'day' ? 'Day Shift' : 'Night Shift'}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Location Column */}
-                  <td className="px-4 py-4">
-                    <div className="flex items-center">
-                      <MapPin className="w-4 h-4 text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-900 dark:text-white">
-                        {report.location}
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* CCTV Status Column */}
-                  <td className="px-4 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium 
-                                   ${report.cctv_status === 'fully-functional' 
-                                     ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
-                                     : report.cctv_status === 'partial-issue'
-                                     ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200'
-                                     : report.cctv_status === 'not-working'
-                                     ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
-                                     : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-200'
-                                   }`}>
-                      <Camera className="w-3.5 h-3.5 mr-1" />
-                      {report.cctv_status || 'Not Specified'}
-                    </span>
-                  </td>
-
-                  {/* Status Column */}
-                  <td className="px-4 py-4">
-                    {report.incident_occurred ? (
-                      <span className="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium 
-                                     bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200">
-                        <AlertCircle className="w-3.5 h-3.5 mr-1" />
-                        Incident Reported
-                      </span>
-                    ) : hasIssues(report) ? (
-                      <span className="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium 
-                                     bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">
-                        <AlertTriangle className="w-3.5 h-3.5 mr-1" />
-                        Issues Present
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium 
-                                     bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">
-                        <CheckCircle className="w-3.5 h-3.5 mr-1" />
-                        Normal
-                      </span>
-                    )}
-                  </td>
-
-                  {/* Actions Column */}
-                  <td className="px-4 py-4">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => {
-                          setSelectedReport(report);
-                          setShowReportModal(true);
-                        }}
-                        className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm
+  lg text-sm
                                  bg-gray-900 text-white hover:bg-gray-800 dark:bg-gray-700 
                                  dark:hover:bg-gray-600 transition-colors"
                       >
@@ -1125,8 +1044,7 @@ const GuardShiftReportViewer = () => {
       </div>
     </div>
   );
-
-  // Load initial data
+// Load initial data
   useEffect(() => {
     fetchReports();
     fetchStats();
