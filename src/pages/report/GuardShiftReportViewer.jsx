@@ -277,25 +277,31 @@ const exportDetailedReport = async (report) => {
     // Create report reference number
     const reportRef = `SR-${new Date(report.created_at).toISOString().slice(0,10).replace(/-/g,'')}`;
 
-    // Calculate team member rows
-    const teamMemberCount = report.team_members && report.team_members.length > 0 ? report.team_members.length : 1;
-    const displayTeamMemberCount = Math.min(teamMemberCount, 3); // Show max 3 rows
-    const hasMoreTeamMembers = teamMemberCount > 3;
+// Calculate team member rows with no limit
+const teamMemberCount = report.team_members && report.team_members.length > 0 ? report.team_members.length : 1;
     
-    // Calculate top positions with generous spacing (no overlapping)
-    const securityPersonnelY = 210;
-    const securityPersonnelHeight = (displayTeamMemberCount * 41) + 60; // 41px per row + header + padding
+// Calculate row height based on team member count (41px per row)
+const teamTableHeight = (teamMemberCount * 41) + 60; // 41px per row + header + padding
+
+// Adjust the max height to prevent overflow if too many team members
+const maxTeamTableHeight = 300; // Maximum height for the team table
+const actualTeamTableHeight = Math.min(teamTableHeight, maxTeamTableHeight);
     
-    const cctvMonitoringY = securityPersonnelY + securityPersonnelHeight + 30; // 30px gap
-    const cctvMonitoringHeight = 120; // Fixed height for CCTV section
+// Calculate section positions with adjusted spacing for unlimited team members
+const securityPersonnelY = 210;
+const securityPersonnelHeight = actualTeamTableHeight;
     
-    const utilityStatusY = cctvMonitoringY + cctvMonitoringHeight + 30; // 30px gap
-    const utilityStatusHeight = 120; // Fixed height for Utility section
+// Calculate Y positions for all sections
+const cctvMonitoringY = securityPersonnelY + securityPersonnelHeight + 30; // 30px gap
+const cctvMonitoringHeight = 120; // Fixed height for CCTV section
     
-    const incidentReportY = utilityStatusY + utilityStatusHeight + 30; // 30px gap
-    const incidentReportHeight = report.incident_occurred ? 300 : 80; // Variable height based on incidents
+const utilityStatusY = cctvMonitoringY + cctvMonitoringHeight + 30; // 30px gap
+const utilityStatusHeight = 120; // Fixed height for Utility section
     
-    const notesY = incidentReportY + incidentReportHeight + 30; // 30px gap
+const incidentReportY = utilityStatusY + utilityStatusHeight + 30; // 30px gap
+const incidentReportHeight = report.incident_occurred ? 300 : 80; // Variable height based on incidents
+    
+const notesY = incidentReportY + incidentReportHeight + 30; // 30px gap
 
     tempContainer.innerHTML = `
       <div style="font-family: Arial, sans-serif; width: 800px; height: 1131px; position: relative; background-color: #ffffff;">
@@ -344,44 +350,39 @@ const exportDetailedReport = async (report) => {
             }</div>
           </div>
         </div>
-
-        <!-- Security Personnel Section -->
-        <div style="position: absolute; left: 58px; top: ${securityPersonnelY}px; right: 20px;">
-          <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; font-weight: bold;">Security Personnel</h2>
-          
-          <!-- Team Member Table -->
-          <table style="width: 100%; border-collapse: collapse; background-color: #fff;">
-            <thead>
-              <tr style="background-color: #f3f6f9;">
-                <th style="padding: 10px; text-align: left; font-size: 14px; font-weight: bold; color: #5d6d7e; border: 1px solid #e0e0e0;">NAME</th>
-                <th style="padding: 10px; text-align: left; font-size: 14px; font-weight: bold; color: #5d6d7e; border: 1px solid #e0e0e0;">ID NUMBER</th>
-                <th style="padding: 10px; text-align: left; font-size: 14px; font-weight: bold; color: #5d6d7e; border: 1px solid #e0e0e0;">POSITION</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${report.team_members && report.team_members.length > 0 
-                ? report.team_members.slice(0, 3).map((member, index) => `
-                    <tr>
-                      <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;">${member.name}</td>
-                      <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;">${member.id}</td>
-                      <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;">Security Officer</td>
-                    </tr>
-                  `).join('') 
-                : `
-                    <tr>
-                      <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;">No team members recorded</td>
-                      <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;"></td>
-                      <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;"></td>
-                    </tr>
-                  `
-              }
-              ${hasMoreTeamMembers
-                ? `<tr><td colspan="3" style="text-align: right; padding: 5px 10px; font-size: 12px; color: #5d6d7e; font-style: italic; border: 1px solid #e0e0e0;">+${report.team_members.length - 3} more team members</td></tr>` 
-                : ''
-              }
-            </tbody>
-          </table>
-        </div>
+<!-- Security Personnel Section -->
+<div style="position: absolute; left: 58px; top: ${securityPersonnelY}px; right: 20px;">
+  <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; font-weight: bold;">Security Personnel</h2>
+  
+  <!-- Team Member Table -->
+  <table style="width: 100%; border-collapse: collapse; background-color: #fff;">
+    <thead>
+      <tr style="background-color: #f3f6f9;">
+        <th style="padding: 10px; text-align: left; font-size: 14px; font-weight: bold; color: #5d6d7e; border: 1px solid #e0e0e0;">NAME</th>
+        <th style="padding: 10px; text-align: left; font-size: 14px; font-weight: bold; color: #5d6d7e; border: 1px solid #e0e0e0;">ID NUMBER</th>
+        <th style="padding: 10px; text-align: left; font-size: 14px; font-weight: bold; color: #5d6d7e; border: 1px solid #e0e0e0;">POSITION</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${report.team_members && report.team_members.length > 0 
+        ? report.team_members.map((member, index) => `
+            <tr>
+              <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;">${member.name}</td>
+              <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;">${member.id}</td>
+              <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;">Security Officer</td>
+            </tr>
+          `).join('') 
+        : `
+            <tr>
+              <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;">No team members recorded</td>
+              <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;"></td>
+              <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;"></td>
+            </tr>
+          `
+      }
+    </tbody>
+  </table>
+</div>
 
         <!-- CCTV Monitoring Section -->
         <div style="position: absolute; left: 58px; top: ${cctvMonitoringY}px; right: 20px; border-top: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0; padding: 15px 0;">
@@ -952,25 +953,25 @@ const exportDetailedReport = async (report) => {
 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
   <StatusCard
     icon={FileText}
-    label="Total Reports"
+    label="Total Reports (Last 7 Days)"
     value={stats.totalReports}
     color="text-blue-600 dark:text-blue-500"
   />
   <StatusCard
     icon={CheckCircle}
-    label="Normal Reports"
+    label="Normal Reports (Last 7 Days)"
     value={stats.normalReports}
     color="text-green-600 dark:text-green-500"
   />
   <StatusCard
     icon={AlertTriangle}
-    label="Reports with Issues"
+    label="Reports with Issues (Last 7 Days)"
     value={stats.issuesReports}
     color="text-yellow-600 dark:text-yellow-500"
   />
   <StatusCard
     icon={AlertCircle}
-    label="Incident Reports"
+    label="Incident Reports (Last 7 Days)"
     value={stats.incidentReports}
     color="text-red-600 dark:text-red-500"
   />
