@@ -258,7 +258,7 @@ const GuardShiftReportViewer = () => {
     }
   };
 
-// Export Detailed Report Function - Final Improved Version
+// Export Detailed Report Function - Final Version with Adjusted Spacing
 const exportDetailedReport = async (report) => {
   try {
     const tempContainer = document.createElement('div');
@@ -276,6 +276,24 @@ const exportDetailedReport = async (report) => {
     
     // Create report reference number
     const reportRef = `SR-${new Date(report.created_at).toISOString().slice(0,10).replace(/-/g,'')}`;
+
+    // Calculate team member rows (for dynamic positioning)
+    const teamMemberRows = report.team_members && report.team_members.length > 0 
+      ? Math.min(report.team_members.length, 10) // Show up to 10 rows max
+      : 1; // At least one row for "No team members"
+    
+    // Additional row if showing "more team members" message
+    const hasMoreTeamMembers = report.team_members && report.team_members.length > 10;
+    
+    // Calculate total team member table height (including header and more members row)
+    const teamTableHeight = (teamMemberRows * 40) + 40 + (hasMoreTeamMembers ? 30 : 0);
+    
+    // Calculate Y positions for all sections
+    const securityPersonnelY = 210;
+    const cctvMonitoringY = securityPersonnelY + teamTableHeight + 40; // 40px spacing
+    const utilityStatusY = cctvMonitoringY + 100; // 100px for CCTV section
+    const incidentReportY = utilityStatusY + 100; // 100px for Utility section
+    const notesY = report.incident_occurred ? incidentReportY + 250 : incidentReportY + 80;
 
     tempContainer.innerHTML = `
       <div style="font-family: Arial, sans-serif; width: 800px; height: 1131px; position: relative; background-color: #ffffff;">
@@ -326,7 +344,7 @@ const exportDetailedReport = async (report) => {
         </div>
 
         <!-- Security Personnel Section -->
-        <div style="position: absolute; left: 58px; top: 210px; right: 20px;">
+        <div style="position: absolute; left: 58px; top: ${securityPersonnelY}px; right: 20px;">
           <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; font-weight: bold;">Security Personnel</h2>
           
           <!-- Team Member Table -->
@@ -340,7 +358,7 @@ const exportDetailedReport = async (report) => {
             </thead>
             <tbody>
               ${report.team_members && report.team_members.length > 0 
-                ? report.team_members.map((member, index) => `
+                ? report.team_members.slice(0, 10).map((member, index) => `
                     <tr>
                       <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;">${member.name}</td>
                       <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;">${member.id}</td>
@@ -355,8 +373,8 @@ const exportDetailedReport = async (report) => {
                     </tr>
                   `
               }
-              ${report.team_members && report.team_members.length > 3 
-                ? `<tr><td colspan="3" style="text-align: right; padding: 5px 10px; font-size: 12px; color: #5d6d7e; font-style: italic; border: 1px solid #e0e0e0;">+${report.team_members.length - 3} more team members</td></tr>` 
+              ${hasMoreTeamMembers
+                ? `<tr><td colspan="3" style="text-align: right; padding: 5px 10px; font-size: 12px; color: #5d6d7e; font-style: italic; border: 1px solid #e0e0e0;">+${report.team_members.length - 10} more team members</td></tr>` 
                 : ''
               }
             </tbody>
@@ -364,7 +382,7 @@ const exportDetailedReport = async (report) => {
         </div>
 
         <!-- CCTV Monitoring Section -->
-        <div style="position: absolute; left: 58px; top: 330px; right: 20px; border-top: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0; padding-top: 10px;">
+        <div style="position: absolute; left: 58px; top: ${cctvMonitoringY}px; right: 20px; border-top: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0; padding-top: 10px; padding-bottom: 15px;">
           <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; font-weight: bold;">CCTV Monitoring</h2>
           
           <div style="display: flex; margin-bottom: 10px;">
@@ -409,7 +427,7 @@ const exportDetailedReport = async (report) => {
         </div>
 
         <!-- Utility Status Section -->
-        <div style="position: absolute; left: 58px; top: 420px; right: 20px; padding-top: 10px; border-bottom: 1px solid #e0e0e0;">
+        <div style="position: absolute; left: 58px; top: ${utilityStatusY}px; right: 20px; padding-top: 10px; border-bottom: 1px solid #e0e0e0; padding-bottom: 15px;">
           <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; font-weight: bold;">Utility Status</h2>
           
           <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
@@ -476,7 +494,7 @@ const exportDetailedReport = async (report) => {
         </div>
 
         <!-- Incident Report Section -->
-        <div style="position: absolute; left: 58px; top: 500px; right: 20px; padding-top: 10px; border-bottom: 1px solid #e0e0e0;">
+        <div style="position: absolute; left: 58px; top: ${incidentReportY}px; right: 20px; padding-top: 10px; border-bottom: 1px solid #e0e0e0; padding-bottom: 15px;">
           <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; font-weight: bold;">Incident Report</h2>
           
           ${report.incident_occurred 
@@ -521,7 +539,7 @@ const exportDetailedReport = async (report) => {
 
         <!-- Notes Section (if available) -->
         ${report.notes 
-          ? `<div style="position: absolute; left: 58px; top: ${report.incident_occurred ? '750' : '570'}px; right: 20px; padding-top: 10px;">
+          ? `<div style="position: absolute; left: 58px; top: ${notesY}px; right: 20px; padding-top: 10px;">
               <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; font-weight: bold;">Notes</h2>
               <div style="border: 1px solid #e0e0e0; padding: 15px; font-size: 14px; color: #2c3e50; line-height: 1.5;">
                 ${report.notes}
