@@ -280,10 +280,10 @@ const exportDetailedReport = async (report) => {
     tempContainer.innerHTML = `
       <div style="font-family: Arial, sans-serif; width: 800px; height: 1131px; position: relative; background-color: #ffffff;">
         <!-- Left sidebar -->
-        <div style="position: absolute; left: 0; top: 0; width: 35px; height: 1131px; background-color: #2c3e50;"></div>
+        <div style=" left: 0; top: 0; width: 35px; height: 1131px; background-color: #2c3e50;"></div>
         
         <!-- Header -->
-        <div style="position: absolute; left: 35px; top: 0; width: 765px; height: 100px; border-bottom: 1px solid #e0e0e0; background-color: #f9f9f9; display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 0;">
+        <div style=" left: 35px; top: 0; width: 765px; height: 100px; border-bottom: 1px solid #e0e0e0; background-color: #f9f9f9; display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 0;">
           <div style="margin-left: 35px;">
             <h1 style="margin: 0; font-size: 28px; color: #2c3e50; font-weight: bold; text-transform: uppercase;">Security Shift Report</h1>
             <p style="margin: 5px 0 0 0; font-size: 14px; color: #555; font-weight: normal;">Detailed documentation of security observations and incidents</p>
@@ -295,7 +295,7 @@ const exportDetailedReport = async (report) => {
         </div>
 
         <!-- Basic Info Grid -->
-        <div style="position: absolute; left: 70px; top: 120px; right: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px;">
+        <div style=" left: 70px; top: 120px; right: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px;">
           <!-- Column 1: Location -->
           <div style="border: 1px solid #e0e0e0;">
             <div style="background-color: #f9f9f9; padding: 8px 10px; font-size: 12px; color: #5d6d7e; font-weight: bold;">LOCATION</div>
@@ -326,7 +326,7 @@ const exportDetailedReport = async (report) => {
         </div>
 
         <!-- Security Personnel Section -->
-        <div style="position: absolute; left: 58px; top: 210px; right: 20px;">
+        <div style=" left: 58px; top: 210px; right: 20px;">
           <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; font-weight: bold;">Security Personnel</h2>
           
           <!-- Team Member Table -->
