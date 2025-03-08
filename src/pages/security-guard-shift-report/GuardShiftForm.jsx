@@ -40,7 +40,6 @@ const GuardShiftForm = () => {
     confirmSubmit,
     cancelSubmit
   } = useGuardShiftForm();
-
   const renderConfirmationContent = () => {
     return (
       <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -64,6 +63,17 @@ const GuardShiftForm = () => {
         <h3 className="font-medium text-gray-900 dark:text-white">CCTV Monitoring</h3>
         <div className="pl-4 space-y-1 text-sm text-gray-600 dark:text-gray-300">
           <p>Status: {formData.cctvStatus}</p>
+          {formData.cctvStatus === 'not-supervised' && (
+            <>
+              <p>Reason: {
+                formData.cctvSupervisionReason === 'staff-shortage' ? 'Staff Shortage' :
+                formData.cctvSupervisionReason === 'emergency-elsewhere' ? 'Handling Emergency Elsewhere' :
+                formData.cctvSupervisionReason === 'no-access' ? 'No Access to CCTV Room' :
+                formData.cctvSupervisionReason === 'other' ? 'Other: ' + formData.cctvSupervisionOtherReason :
+                formData.cctvSupervisionReason
+              }</p>
+            </>
+          )}
           {formData.cctvIssues && <p>Issues: {formData.cctvIssues}</p>}
         </div>
 
@@ -97,7 +107,6 @@ const GuardShiftForm = () => {
       </div>
     );
   };
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Toast Notification */}
@@ -140,7 +149,6 @@ const GuardShiftForm = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -232,7 +240,6 @@ const GuardShiftForm = () => {
                 />
               </div>
             </motion.div>
-
             {/* Team Members */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -300,96 +307,94 @@ const GuardShiftForm = () => {
                 </div>
               </div>
             </motion.div>
-
             {/* CCTV Monitoring */}
-<motion.div
-  initial={{ opacity: 0 }}
-  animate={{ opacity: 1 }}
-  transition={{ delay: 0.3 }}
-  className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-6"
->
-  <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-    <Camera className="w-5 h-5 mr-2" />
-    CCTV Monitoring
-  </h2>
-  
-  <div className="mt-4 space-y-4">
-    <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-        CCTV Supervision Status
-      </label>
-      <select
-        value={formData.cctvStatus}
-        onChange={(e) => setFormData({ ...formData, cctvStatus: e.target.value })}
-        className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black"
-        required
-      >
-        <option value="">Select CCTV Status</option>
-        <option value="fully-functional">Fully Functional</option>
-        <option value="partial-issue">Partial Issue</option>
-        <option value="not-working">Not Working</option>
-        <option value="not-supervised">Not Supervised</option>
-      </select>
-    </div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-6"
+            >
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+                <Camera className="w-5 h-5 mr-2" />
+                CCTV Monitoring
+              </h2>
+              
+              <div className="mt-4 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    CCTV Supervision Status
+                  </label>
+                  <select
+                    value={formData.cctvStatus}
+                    onChange={(e) => setFormData({ ...formData, cctvStatus: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
+                             dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black"
+                    required
+                  >
+                    <option value="">Select CCTV Status</option>
+                    <option value="fully-functional">Fully Functional</option>
+                    <option value="partial-issue">Partial Issue</option>
+                    <option value="not-working">Not Working</option>
+                    <option value="not-supervised">Not Supervised</option>
+                  </select>
+                </div>
 
-    {(formData.cctvStatus === 'not-supervised') && (
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Reason for Lack of Supervision
-        </label>
-        <select
-          value={formData.cctvSupervisionReason || ''}
-          onChange={(e) => setFormData({ ...formData, cctvSupervisionReason: e.target.value })}
-          className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                   dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black"
-          required={formData.cctvStatus === 'not-supervised'}
-        >
-          <option value="">Select Reason</option>
-          <option value="staff-shortage">Staff Shortage</option>
-          <option value="emergency-elsewhere">Handling Emergency Elsewhere</option>
-          <option value="no-access">No Access to CCTV Room</option>
-          <option value="other">Other Reason</option>
-        </select>
-      </div>
-    )}
+                {(formData.cctvStatus === 'not-supervised') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Reason for Lack of Supervision
+                    </label>
+                    <select
+                      value={formData.cctvSupervisionReason || ''}
+                      onChange={(e) => setFormData({ ...formData, cctvSupervisionReason: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
+                               dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black"
+                      required={formData.cctvStatus === 'not-supervised'}
+                    >
+                      <option value="">Select Reason</option>
+                      <option value="staff-shortage">Staff Shortage</option>
+                      <option value="emergency-elsewhere">Handling Emergency Elsewhere</option>
+                      <option value="no-access">No Access to CCTV Room</option>
+                      <option value="other">Other Reason</option>
+                    </select>
+                  </div>
+                )}
 
-    {formData.cctvSupervisionReason === 'other' && formData.cctvStatus === 'not-supervised' && (
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Specify Reason
-        </label>
-        <textarea
-          value={formData.cctvSupervisionOtherReason || ''}
-          onChange={(e) => setFormData({ ...formData, cctvSupervisionOtherReason: e.target.value })}
-          placeholder="Please specify why CCTV was not supervised..."
-          className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                   dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black
-                   min-h-[100px]"
-          required={formData.cctvSupervisionReason === 'other'}
-        />
-      </div>
-    )}
+                {formData.cctvSupervisionReason === 'other' && formData.cctvStatus === 'not-supervised' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Specify Reason
+                    </label>
+                    <textarea
+                      value={formData.cctvSupervisionOtherReason || ''}
+                      onChange={(e) => setFormData({ ...formData, cctvSupervisionOtherReason: e.target.value })}
+                      placeholder="Please specify why CCTV was not supervised..."
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
+                               dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black
+                               min-h-[100px]"
+                      required={formData.cctvSupervisionReason === 'other'}
+                    />
+                  </div>
+                )}
 
-    {(formData.cctvStatus === 'partial-issue' || formData.cctvStatus === 'not-working') && (
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          CCTV Issues Description
-        </label>
-        <textarea
-          value={formData.cctvIssues}
-          onChange={(e) => setFormData({ ...formData, cctvIssues: e.target.value })}
-          placeholder="Describe CCTV issues in detail..."
-          className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                   dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black
-                   min-h-[100px]"
-          required={formData.cctvStatus !== 'fully-functional' && formData.cctvStatus !== 'not-supervised'}
-        />
-      </div>
-    )}
-  </div>
-</motion.div>
-
+                {(formData.cctvStatus === 'partial-issue' || formData.cctvStatus === 'not-working') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      CCTV Issues Description
+                    </label>
+                    <textarea
+                      value={formData.cctvIssues}
+                      onChange={(e) => setFormData({ ...formData, cctvIssues: e.target.value })}
+                      placeholder="Describe CCTV issues in detail..."
+                      className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
+                               dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black
+                               min-h-[100px]"
+                      required={formData.cctvStatus !== 'fully-functional' && formData.cctvStatus !== 'not-supervised'}
+                    />
+                  </div>
+                )}
+              </div>
+            </motion.div>
             {/* Utility Status */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -480,37 +485,7 @@ const GuardShiftForm = () => {
                 </div>
               </div>
             </motion.div>
-
-            {/* Incident Reporting */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-6"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-                  <AlertCircle className="w-5 h-5 mr-2" />
-                  Incident Report
-                </h2>
-                
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.incidentOccurred}
-                    onChange={(e) => setFormData({ ...formData, incidentOccurred: e.target.checked })}
-                    className="rounded border-gray-300 text-black focus:ring-black"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Incident Occurred</span>
-                </label>
-              </div>
-
-              {formData.incidentOccurred && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <select
-                      value={formData.incidentType}
-                      onChange={(e) => setFormData({ ...formData, incidentType: e.target.value })}
+            value })}
                       className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
                                dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black"
                       required={formData.incidentOccurred}
@@ -568,8 +543,7 @@ const GuardShiftForm = () => {
                 </div>
               )}
             </motion.div>
-
-            {/* Notes Section */}
+    {/* Notes Section */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
