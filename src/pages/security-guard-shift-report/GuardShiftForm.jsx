@@ -66,7 +66,6 @@ const GuardShiftForm = () => {
           {formData.cctvStatus === 'not-supervised' && (
             <>
               <p>Reason: {
-                formData.cctvSupervisionReason === 'not-assigned' ? 'Not Assigned to CCTV Duty' :
                 formData.cctvSupervisionReason === 'staff-shortage' ? 'Staff Shortage' :
                 formData.cctvSupervisionReason === 'emergency-elsewhere' ? 'Handling Emergency Elsewhere' :
                 formData.cctvSupervisionReason === 'no-access' ? 'No Access to CCTV Room' :
@@ -353,7 +352,6 @@ const GuardShiftForm = () => {
                       required={formData.cctvStatus === 'not-supervised'}
                     >
                       <option value="">Select Reason</option>
-                      <option value="not-assigned">Not Assigned to CCTV Duty</option>
                       <option value="staff-shortage">Staff Shortage</option>
                       <option value="emergency-elsewhere">Handling Emergency Elsewhere</option>
                       <option value="no-access">No Access to CCTV Room</option>
