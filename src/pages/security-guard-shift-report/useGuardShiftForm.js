@@ -18,6 +18,8 @@ export const useGuardShiftForm = () => {
     teamMembers: [],
     cctvStatus: '',
     cctvIssues: '',
+    cctvSupervisionReason: '',
+    cctvSupervisionOtherReason: '',
     electricityStatus: '',
     waterStatus: '',
     officeStatus: '',
@@ -38,6 +40,34 @@ export const useGuardShiftForm = () => {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Watch for changes in cctvStatus to reset related fields
+  useEffect(() => {
+    if (formData.cctvStatus !== 'not-supervised') {
+      setFormData(prev => ({
+        ...prev,
+        cctvSupervisionReason: '',
+        cctvSupervisionOtherReason: ''
+      }));
+    }
+    
+    if (formData.cctvStatus !== 'partial-issue' && formData.cctvStatus !== 'not-working') {
+      setFormData(prev => ({
+        ...prev,
+        cctvIssues: ''
+      }));
+    }
+  }, [formData.cctvStatus]);
+
+  // Reset cctvSupervisionOtherReason when reason is not "other"
+  useEffect(() => {
+    if (formData.cctvSupervisionReason !== 'other') {
+      setFormData(prev => ({
+        ...prev,
+        cctvSupervisionOtherReason: ''
+      }));
+    }
+  }, [formData.cctvSupervisionReason]);
 
   const showToast = (message, type) => {
     setToast({ show: true, message, type });
@@ -78,6 +108,11 @@ export const useGuardShiftForm = () => {
         team_members: formData.teamMembers,
         cctv_status: formData.cctvStatus,
         cctv_issues: formData.cctvIssues || null,
+        cctv_supervision_reason: formData.cctvStatus === 'not-supervised' ? formData.cctvSupervisionReason : null,
+        cctv_supervision_other_reason: 
+          formData.cctvStatus === 'not-supervised' && 
+          formData.cctvSupervisionReason === 'other' ? 
+          formData.cctvSupervisionOtherReason : null,
         electricity_status: formData.electricityStatus,
         water_status: formData.waterStatus,
         office_status: formData.officeStatus,
@@ -115,6 +150,8 @@ export const useGuardShiftForm = () => {
         teamMembers: [],
         cctvStatus: '',
         cctvIssues: '',
+        cctvSupervisionReason: '',
+        cctvSupervisionOtherReason: '',
         electricityStatus: '',
         waterStatus: '',
         officeStatus: '',
@@ -138,6 +175,34 @@ export const useGuardShiftForm = () => {
 
   const initiateSubmit = (e) => {
     e.preventDefault();
+
+    // Form validation
+    let isValid = true;
+    let validationMessage = '';
+
+    // Validate CCTV supervision reason if status is 'not-supervised'
+    if (formData.cctvStatus === 'not-supervised' && !formData.cctvSupervisionReason) {
+      isValid = false;
+      validationMessage = 'Please select a reason for not supervising CCTV';
+    }
+
+    // Validate cctvSupervisionOtherReason if reason is 'other'
+    if (
+      formData.cctvStatus === 'not-supervised' && 
+      formData.cctvSupervisionReason === 'other' && 
+      !formData.cctvSupervisionOtherReason
+    ) {
+      isValid = false;
+      validationMessage = 'Please specify the reason for not supervising CCTV';
+    }
+
+    // If validation fails, show error and stop submission
+    if (!isValid) {
+      showToast(validationMessage, 'error');
+      return;
+    }
+
+    // All validations passed, open confirmation dialog
     setIsConfirmDialogOpen(true);
   };
 
