@@ -778,199 +778,140 @@ const GuardShiftReportViewer = () => {
       </div>
     );
   };
-  // Dashboard Header Component
-  const DashboardHeader = () => (
-    <>
-      {/* Page Title and Export Button */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Security Reports Dashboard
-          </h1>
-          <p className="mt-1 text-gray-500 dark:text-gray-400">
-            Monitor and manage security shift reports
-          </p>
-        </div>
-        
-        <button
-          onClick={exportAllReports}
-          className="flex items-center space-x-2 px-4 py-2 bg-gray-900 dark:bg-gray-700 
-                   text-white rounded-lg hover:bg-gray-800 dark:hover:bg-gray-600 
-                   transition-colors"
-        >
-          <FileSpreadsheet className="w-5 h-5" />
-          <span>Export All Reports</span>
-        </button>
-      </div>
+  // Reports Table Component
+  const ReportsTable = () => (
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="bg-gray-50 dark:bg-gray-700">
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 dark:text-gray-300">
+                Date & Time
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 dark:text-gray-300">
+                Submitted By
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 dark:text-gray-300">
+                Location
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 dark:text-gray-300">
+                CCTV Status
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 dark:text-gray-300">
+                Report Status
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 dark:text-gray-300">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            {loading ? (
+              <tr>
+                <td colSpan="6" className="px-4 py-8 text-center">
+                  <div className="flex justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black dark:border-white"></div>
+                  </div>
+                </td>
+              </tr>
+            ) : reports.length === 0 ? (
+              <tr>
+                <td colSpan="6" className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                  No reports found
+                </td>
+              </tr>
+            ) : (
+              reports.map((report) => (
+                <tr 
+                  key={report.id}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  {/* Date & Time Column */}
+                  <td className="px-4 py-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {new Date(report.created_at).toLocaleDateString()}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(report.created_at).toLocaleTimeString()}
+                      </p>
+                    </div>
+                  </td>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatusCard
-          icon={FileText}
-          label="Total Reports (Last 7 Days)"
-          value={stats.totalReports}
-          color="text-blue-600 dark:text-blue-500"
-        />
-        <StatusCard
-          icon={CheckCircle}
-          label="Normal Reports"
-          value={stats.normalReports}
-          color="text-green-600 dark:text-green-500"
-        />
-        <StatusCard
-          icon={AlertTriangle}
-          label="Reports with Issues"
-          value={stats.issuesReports}
-          color="text-yellow-600 dark:text-yellow-500"
-        />
-        <StatusCard
-          icon={AlertCircle}
-          label="Incident Reports"
-          value={stats.incidentReports}
-          color="text-red-600 dark:text-red-500"
-        />
-      </div>
+                  {/* Guard Column */}
+                  <td className="px-4 py-4">
+                    <div className="flex items-center">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {report.submitted_by}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {report.shift_type === 'day' ? 'Day Shift' : 'Night Shift'}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
 
-      {/* Filters Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg mb-8">
-        <div className="mb-4 flex items-center space-x-2">
-          <Filter className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Filter Reports
-          </h2>
-        </div>
+                  {/* Location Column */}
+                  <td className="px-4 py-4">
+                    <div className="flex items-center">
+                      <MapPin className="w-4 h-4 text-gray-400 mr-2" />
+                      <span className="text-sm text-gray-900 dark:text-white">
+                        {report.location}
+                      </span>
+                    </div>
+                  </td>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Location
-            </label>
-            <select
-              value={filters.location}
-              onChange={(e) => setFilters({ ...filters, location: e.target.value })}
-              className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                       dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black
-                       dark:focus:ring-gray-400"
-            >
-              <option value="">All Locations</option>
-              <option value="Nyarutarama HQ">Nyarutarama HQ</option>
-              <option value="Remera Switch">Remera Switch</option>
-              <option value="Kabuga SC">Kabuga Service Center</option>
-              <option value="Kimironko SC">Kimironko Service Center</option>
-              <option value="Giporoso SC">Giporoso Service Center</option>
-              <option value="Kisimenti SC">Kisimenti Service Center</option>
-              <option value="Kicukiro SC">Kicukiro Service Center</option>
-              <option value="KCM SC">KCM Service Center</option>
-              <option value="CHIC SC">CHIC Service Center</option>
-              <option value="Nyamirambo SC">Nyamirambo Service Center</option>
-              <option value="Nyabugogo SC">Nyabugogo Service Center</option>
-              <option value="Gisozi SC">Gisozi Service Center</option>
-            </select>
-          </div>
+                  {/* CCTV Status Column */}
+                  <td className="px-4 py-4">
+                    <span className={`inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium 
+                                   ${report.cctv_status === 'fully-functional' 
+                                     ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
+                                     : report.cctv_status === 'partial-issue'
+                                     ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200'
+                                     : report.cctv_status === 'not-working'
+                                     ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
+                                     : report.cctv_status === 'not-supervised'
+                                     ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
+                                     : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-200'
+                                   }`}>
+                      <Camera className="w-3.5 h-3.5 mr-1" />
+                      {report.cctv_status || 'Not Specified'}
+                    </span>
+                  </td>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Start Date
-            </label>
-            <input
-              type="date"
-              value={filters.startDate}
-              onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-              className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                       dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black
-                       dark:focus:ring-gray-400"
-            />
-          </div>
+                  {/* Status Column */}
+                  <td className="px-4 py-4">
+                    {report.incident_occurred ? (
+                      <span className="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium 
+                                     bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200">
+                        <AlertCircle className="w-3.5 h-3.5 mr-1" />
+                        Incident Reported
+                      </span>
+                    ) : hasIssues(report) ? (
+                      <span className="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium 
+                                     bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">
+                        <AlertTriangle className="w-3.5 h-3.5 mr-1" />
+                        Issues Present
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium 
+                                     bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200">
+                        <CheckCircle className="w-3.5 h-3.5 mr-1" />
+                        Normal
+                      </span>
+                    )}
+                  </td>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              End Date
-            </label>
-            <input
-              type="date"
-              value={filters.endDate}
-              onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-              className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                       dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black
-                       dark:focus:ring-gray-400"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Shift Type
-            </label>
-            <select
-              value={filters.shiftType}
-              onChange={(e) => setFilters({ ...filters, shiftType: e.target.value })}
-              className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                       dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black
-                       dark:focus:ring-gray-400"
-            >
-              <option value="">All Shifts</option>
-              <option value="day">Day Shift</option>
-              <option value="night">Night Shift</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Status
-            </label>
-            <select
-              value={filters.hasIncident}
-              onChange={(e) => setFilters({ ...filters, hasIncident: e.target.value })}
-              className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                       dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black
-                       dark:focus:ring-gray-400"
-            >
-              <option value="">All Reports</option>
-              <option value="true">With Incidents</option>
-              <option value="false">Without Incidents</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Guard Name
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="    Search guard..."
-                value={filters.guard}
-                onChange={(e) => setFilters({ ...filters, guard: e.target.value })}
-                className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600
-                         dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-black
-                         dark:focus:ring-gray-400"
-              />
-              <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-            </div>
-          </div>
-        </div>
-
-        {/* Reset Filters Button */}
-        <div className="mt-4 flex justify-end">
-          <button
-            onClick={() => setFilters({
-              startDate: getWeekDates().startDate,
-              endDate: getWeekDates().endDate,
-              shiftType: '',
-              hasIncident: '',
-              guard: '',
-              location: ''
-            })}
-            className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900
-                     dark:hover:text-white transition-colors border border-gray-200 
-                     dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-          >
-            Reset Filters
-          </button>
-        </div>
-      </div>
-    </>
-  );
-  lg text-sm
+                  {/* Actions Column */}
+                  <td className="px-4 py-4">
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => {
+                          setSelectedReport(report);
+                          setShowReportModal(true);
+                        }}
+                        className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm
                                  bg-gray-900 text-white hover:bg-gray-800 dark:bg-gray-700 
                                  dark:hover:bg-gray-600 transition-colors"
                       >
@@ -1044,7 +985,7 @@ const GuardShiftReportViewer = () => {
       </div>
     </div>
   );
-// Load initial data
+  // Load initial data
   useEffect(() => {
     fetchReports();
     fetchStats();
