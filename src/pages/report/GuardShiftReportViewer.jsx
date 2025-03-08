@@ -258,7 +258,7 @@ const GuardShiftReportViewer = () => {
     }
   };
 
-// Export Detailed Report Function - Final Version with Adjusted Spacing
+// Export Detailed Report Function - Perfect Spacing
 const exportDetailedReport = async (report) => {
   try {
     const tempContainer = document.createElement('div');
@@ -277,23 +277,25 @@ const exportDetailedReport = async (report) => {
     // Create report reference number
     const reportRef = `SR-${new Date(report.created_at).toISOString().slice(0,10).replace(/-/g,'')}`;
 
-    // Calculate team member rows (for dynamic positioning)
-    const teamMemberRows = report.team_members && report.team_members.length > 0 
-      ? Math.min(report.team_members.length, 10) // Show up to 10 rows max
-      : 1; // At least one row for "No team members"
+    // Calculate team member rows
+    const teamMemberCount = report.team_members && report.team_members.length > 0 ? report.team_members.length : 1;
+    const displayTeamMemberCount = Math.min(teamMemberCount, 3); // Show max 3 rows
+    const hasMoreTeamMembers = teamMemberCount > 3;
     
-    // Additional row if showing "more team members" message
-    const hasMoreTeamMembers = report.team_members && report.team_members.length > 10;
-    
-    // Calculate total team member table height (including header and more members row)
-    const teamTableHeight = (teamMemberRows * 40) + 40 + (hasMoreTeamMembers ? 30 : 0);
-    
-    // Calculate Y positions for all sections
+    // Calculate top positions with generous spacing (no overlapping)
     const securityPersonnelY = 210;
-    const cctvMonitoringY = securityPersonnelY + teamTableHeight + 40; // 40px spacing
-    const utilityStatusY = cctvMonitoringY + 100; // 100px for CCTV section
-    const incidentReportY = utilityStatusY + 100; // 100px for Utility section
-    const notesY = report.incident_occurred ? incidentReportY + 250 : incidentReportY + 80;
+    const securityPersonnelHeight = (displayTeamMemberCount * 41) + 60; // 41px per row + header + padding
+    
+    const cctvMonitoringY = securityPersonnelY + securityPersonnelHeight + 30; // 30px gap
+    const cctvMonitoringHeight = 120; // Fixed height for CCTV section
+    
+    const utilityStatusY = cctvMonitoringY + cctvMonitoringHeight + 30; // 30px gap
+    const utilityStatusHeight = 120; // Fixed height for Utility section
+    
+    const incidentReportY = utilityStatusY + utilityStatusHeight + 30; // 30px gap
+    const incidentReportHeight = report.incident_occurred ? 300 : 80; // Variable height based on incidents
+    
+    const notesY = incidentReportY + incidentReportHeight + 30; // 30px gap
 
     tempContainer.innerHTML = `
       <div style="font-family: Arial, sans-serif; width: 800px; height: 1131px; position: relative; background-color: #ffffff;">
@@ -358,7 +360,7 @@ const exportDetailedReport = async (report) => {
             </thead>
             <tbody>
               ${report.team_members && report.team_members.length > 0 
-                ? report.team_members.slice(0, 10).map((member, index) => `
+                ? report.team_members.slice(0, 3).map((member, index) => `
                     <tr>
                       <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;">${member.name}</td>
                       <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;">${member.id}</td>
@@ -374,7 +376,7 @@ const exportDetailedReport = async (report) => {
                   `
               }
               ${hasMoreTeamMembers
-                ? `<tr><td colspan="3" style="text-align: right; padding: 5px 10px; font-size: 12px; color: #5d6d7e; font-style: italic; border: 1px solid #e0e0e0;">+${report.team_members.length - 10} more team members</td></tr>` 
+                ? `<tr><td colspan="3" style="text-align: right; padding: 5px 10px; font-size: 12px; color: #5d6d7e; font-style: italic; border: 1px solid #e0e0e0;">+${report.team_members.length - 3} more team members</td></tr>` 
                 : ''
               }
             </tbody>
@@ -382,8 +384,8 @@ const exportDetailedReport = async (report) => {
         </div>
 
         <!-- CCTV Monitoring Section -->
-        <div style="position: absolute; left: 58px; top: ${cctvMonitoringY}px; right: 20px; border-top: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0; padding-top: 10px; padding-bottom: 15px;">
-          <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; font-weight: bold;">CCTV Monitoring</h2>
+        <div style="position: absolute; left: 58px; top: ${cctvMonitoringY}px; right: 20px; border-top: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0; padding: 15px 0;">
+          <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 15px 0; text-transform: uppercase; font-weight: bold;">CCTV Monitoring</h2>
           
           <div style="display: flex; margin-bottom: 10px;">
             <!-- CCTV Status -->
@@ -407,18 +409,19 @@ const exportDetailedReport = async (report) => {
           </div>
 
           ${report.cctv_status === 'not-supervised' 
-            ? `<div style="margin-top: 5px; margin-left: 30px;">
+            ? `<div style="margin-top: 10px; margin-left: 30px;">
                 <div style="font-size: 14px; font-weight: bold; color: #5d6d7e;">Issues:</div>
                 <div style="font-size: 14px; color: #2c3e50; margin-top: 5px;">
                   ${report.cctv_supervision_reason === 'staff-shortage' ? 'Staff Shortage' :
                     report.cctv_supervision_reason === 'emergency-elsewhere' ? 'Handling Emergency Elsewhere' :
                     report.cctv_supervision_reason === 'no-access' ? 'No Access to CCTV Room' :
-                    report.cctv_supervision_reason === 'other' ? 'Other: ' + (report.cctv_supervision_other_reason || '') :
-                    report.cctv_supervision_reason || 'Not specified'}
+                    report.cctv_supervision_reason === 'other' 
+                      ? `Other: ${report.cctv_supervision_other_reason || ''}` 
+                    : report.cctv_supervision_reason || 'Not specified'}
                 </div>
               </div>`
             : report.cctv_issues
-            ? `<div style="margin-top: 5px; margin-left: 30px;">
+            ? `<div style="margin-top: 10px; margin-left: 30px;">
                 <div style="font-size: 14px; font-weight: bold; color: #5d6d7e;">Issues:</div>
                 <div style="font-size: 14px; color: #2c3e50; margin-top: 5px;">${report.cctv_issues}</div>
               </div>`
@@ -427,8 +430,8 @@ const exportDetailedReport = async (report) => {
         </div>
 
         <!-- Utility Status Section -->
-        <div style="position: absolute; left: 58px; top: ${utilityStatusY}px; right: 20px; padding-top: 10px; border-bottom: 1px solid #e0e0e0; padding-bottom: 15px;">
-          <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; font-weight: bold;">Utility Status</h2>
+        <div style="position: absolute; left: 58px; top: ${utilityStatusY}px; right: 20px; border-bottom: 1px solid #e0e0e0; padding: 15px 0;">
+          <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 15px 0; text-transform: uppercase; font-weight: bold;">Utility Status</h2>
           
           <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
             <!-- Electricity -->
@@ -494,8 +497,8 @@ const exportDetailedReport = async (report) => {
         </div>
 
         <!-- Incident Report Section -->
-        <div style="position: absolute; left: 58px; top: ${incidentReportY}px; right: 20px; padding-top: 10px; border-bottom: 1px solid #e0e0e0; padding-bottom: 15px;">
-          <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; font-weight: bold;">Incident Report</h2>
+        <div style="position: absolute; left: 58px; top: ${incidentReportY}px; right: 20px; border-bottom: 1px solid #e0e0e0; padding: 15px 0;">
+          <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 15px 0; text-transform: uppercase; font-weight: bold;">Incident Report</h2>
           
           ${report.incident_occurred 
             ? `<div style="margin-bottom: 15px;">
@@ -539,8 +542,8 @@ const exportDetailedReport = async (report) => {
 
         <!-- Notes Section (if available) -->
         ${report.notes 
-          ? `<div style="position: absolute; left: 58px; top: ${notesY}px; right: 20px; padding-top: 10px;">
-              <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; font-weight: bold;">Notes</h2>
+          ? `<div style="position: absolute; left: 58px; top: ${notesY}px; right: 20px; padding: 15px 0;">
+              <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 15px 0; text-transform: uppercase; font-weight: bold;">Notes</h2>
               <div style="border: 1px solid #e0e0e0; padding: 15px; font-size: 14px; color: #2c3e50; line-height: 1.5;">
                 ${report.notes}
               </div>
@@ -946,35 +949,35 @@ const exportDetailedReport = async (report) => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatusCard
-            icon={FileText}
-            label="Total Reports (Last 7 Days)"
-            value={stats.totalReports}
-            color="text-blue-600 dark:text-blue-500"
-          />
-          <StatusCard
-            icon={CheckCircle}
-            label="Normal Reports"
-            value={stats.normalReports}
-            color="text-green-600 dark:text-green-500"
-          />
-          <StatusCard
-            icon={AlertTriangle}
-            label="Reports with Issues"
-            value={stats.issuesReports}
-            color="text-yellow-600 dark:text-yellow-500"
-          />
-          <StatusCard
-            icon={AlertCircle}
-            label="Incident Reports"
-            value={stats.incidentReports}
-            color="text-red-600 dark:text-red-500"
-          />
-        </div>
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+  <StatusCard
+    icon={FileText}
+    label="Total Reports"
+    value={stats.totalReports}
+    color="text-blue-600 dark:text-blue-500"
+  />
+  <StatusCard
+    icon={CheckCircle}
+    label="Normal Reports"
+    value={stats.normalReports}
+    color="text-green-600 dark:text-green-500"
+  />
+  <StatusCard
+    icon={AlertTriangle}
+    label="Reports with Issues"
+    value={stats.issuesReports}
+    color="text-yellow-600 dark:text-yellow-500"
+  />
+  <StatusCard
+    icon={AlertCircle}
+    label="Incident Reports"
+    value={stats.incidentReports}
+    color="text-red-600 dark:text-red-500"
+  />
+</div>
 
-        {/* Filters Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg mb-8">
+{/* Filters Section */}
+<div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg mb-8">
           <div className="mb-4 flex items-center space-x-2">
             <Filter className="w-5 h-5 text-gray-500 dark:text-gray-400" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
