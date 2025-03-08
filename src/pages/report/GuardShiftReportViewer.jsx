@@ -258,7 +258,7 @@ const GuardShiftReportViewer = () => {
     }
   };
 
-// Export Detailed Report Function - Final Improved Version
+// Export Detailed Report Function - Flexible Layout Version
 const exportDetailedReport = async (report) => {
   try {
     const tempContainer = document.createElement('div');
@@ -278,282 +278,315 @@ const exportDetailedReport = async (report) => {
     const reportRef = `SR-${new Date(report.created_at).toISOString().slice(0,10).replace(/-/g,'')}`;
 
     tempContainer.innerHTML = `
-      <div style="font-family: Arial, sans-serif; width: 800px; height: 1131px; position: relative; background-color: #ffffff;">
+      <div style="font-family: Arial, sans-serif; width: 800px; background-color: #ffffff; display: flex;">
         <!-- Left sidebar -->
-        <div style="position: absolute; left: 0; top: 0; width: 35px; height: 1131px; background-color: #2c3e50;"></div>
+        <div style="width: 35px; min-height: 1131px; background-color: #2c3e50;"></div>
         
-        <!-- Header -->
-        <div style="position: absolute; left: 35px; top: 0; width: 765px; height: 100px; border-bottom: 1px solid #e0e0e0; background-color: #f9f9f9; display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 0;">
-          <div style="margin-left: 35px;">
-            <h1 style="margin: 0; font-size: 28px; color: #2c3e50; font-weight: bold; text-transform: uppercase;">Security Shift Report</h1>
-            <p style="margin: 5px 0 0 0; font-size: 14px; color: #555; font-weight: normal;">Detailed documentation of security observations and incidents</p>
-          </div>
-          <div style="margin-right: 20px; text-align: right;">
-            <div style="font-size: 14px; color: #5d6d7e; margin-bottom: 5px;"><strong>DATE:</strong> ${formattedDate}</div>
-            <div style="font-size: 14px; color: #5d6d7e;"><strong>REF:</strong> ${reportRef}</div>
-          </div>
-        </div>
-
-        <!-- Basic Info Grid -->
-        <div style="position: absolute; left: 70px; top: 120px; right: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px;">
-          <!-- Column 1: Location -->
-          <div style="border: 1px solid #e0e0e0;">
-            <div style="background-color: #f9f9f9; padding: 8px 10px; font-size: 12px; color: #5d6d7e; font-weight: bold;">LOCATION</div>
-            <div style="padding: 10px; font-size: 16px; color: #2c3e50;">${report.location || 'Not specified'}</div>
-          </div>
-          
-          <!-- Column 2: Shift Type -->
-          <div style="border: 1px solid #e0e0e0;">
-            <div style="background-color: #f9f9f9; padding: 8px 10px; font-size: 12px; color: #5d6d7e; font-weight: bold;">SHIFT TYPE</div>
-            <div style="padding: 10px; font-size: 16px; color: #2c3e50;">${report.shift_type?.toUpperCase() || 'Not specified'}</div>
-          </div>
-          
-          <!-- Column 3: Submitted By -->
-          <div style="border: 1px solid #e0e0e0;">
-            <div style="background-color: #f9f9f9; padding: 8px 10px; font-size: 12px; color: #5d6d7e; font-weight: bold;">SUBMITTED BY</div>
-            <div style="padding: 10px; font-size: 16px; color: #2c3e50;">${report.submitted_by || 'Unknown'}</div>
-          </div>
-          
-          <!-- Column 4: Shift Time -->
-          <div style="border: 1px solid #e0e0e0;">
-            <div style="background-color: #f9f9f9; padding: 8px 10px; font-size: 12px; color: #5d6d7e; font-weight: bold;">SHIFT TIME</div>
-            <div style="padding: 10px; font-size: 16px; color: #2c3e50;">${
-              (report.shift_start_time && report.shift_end_time) 
-              ? `${new Date(report.shift_start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${new Date(report.shift_end_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`
-              : "Not specified"
-            }</div>
-          </div>
-        </div>
-
-        <!-- Security Personnel Section -->
-        <div style="position: absolute; left: 58px; top: 210px; right: 20px;">
-          <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; font-weight: bold;">Security Personnel</h2>
-          
-          <!-- Team Member Table -->
-          <table style="width: 100%; border-collapse: collapse; background-color: #fff;">
-            <thead>
-              <tr style="background-color: #f3f6f9;">
-                <th style="padding: 10px; text-align: left; font-size: 14px; font-weight: bold; color: #5d6d7e; border: 1px solid #e0e0e0;">NAME</th>
-                <th style="padding: 10px; text-align: left; font-size: 14px; font-weight: bold; color: #5d6d7e; border: 1px solid #e0e0e0;">ID NUMBER</th>
-                <th style="padding: 10px; text-align: left; font-size: 14px; font-weight: bold; color: #5d6d7e; border: 1px solid #e0e0e0;">POSITION</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${report.team_members && report.team_members.length > 0 
-                ? report.team_members.map((member, index) => `
-                    <tr>
-                      <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;">${member.name}</td>
-                      <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;">${member.id}</td>
-                      <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;">Security Officer</td>
-                    </tr>
-                  `).join('') 
-                : `
-                    <tr>
-                      <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;">No team members recorded</td>
-                      <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;"></td>
-                      <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;"></td>
-                    </tr>
-                  `
-              }
-              ${report.team_members && report.team_members.length > 3 
-                ? `<tr><td colspan="3" style="text-align: right; padding: 5px 10px; font-size: 12px; color: #5d6d7e; font-style: italic; border: 1px solid #e0e0e0;">+${report.team_members.length - 3} more team members</td></tr>` 
-                : ''
-              }
-            </tbody>
-          </table>
-        </div>
-
-        <!-- CCTV Monitoring Section -->
-        <div style="position: absolute; left: 58px; top: 330px; right: 20px; border-top: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0;">
-          <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; font-weight: bold;">CCTV Monitoring</h2>
-          
-          <div style="display: flex; margin-bottom: 10px;">
-            <!-- CCTV Status -->
-            <div style="display: flex; align-items: center;">
-              <!-- Status indicator -->
-              <div style="width: 20px; height: 20px; border-radius: 50%; margin-right: 10px; background-color: ${
-                report.cctv_status === 'fully-functional' ? '#4caf50' : 
-                report.cctv_status === 'partial-issue' ? '#ff9800' : 
-                report.cctv_status === 'not-working' ? '#f44336' :
-                report.cctv_status === 'not-supervised' ? '#2196f3' : '#607d8b'
-              };"></div>
-              
-              <!-- Status text -->
-              <div style="font-size: 16px; font-weight: bold; color: #2c3e50;">Status: ${
-                report.cctv_status === 'fully-functional' ? 'Fully Functional' : 
-                report.cctv_status === 'partial-issue' ? 'Partial Issue' : 
-                report.cctv_status === 'not-working' ? 'Not Working' :
-                report.cctv_status === 'not-supervised' ? 'Not Supervised' : 'Unknown'
-              }</div>
+        <!-- Main content area - using flex column layout instead of absolute positioning -->
+        <div style="flex: 1; display: flex; flex-direction: column;">
+          <!-- Header -->
+          <div style="height: 100px; border-bottom: 1px solid #e0e0e0; background-color: #f9f9f9; display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 0;">
+            <div style="margin-left: 35px;">
+              <h1 style="margin: 0; font-size: 28px; color: #2c3e50; font-weight: bold; text-transform: uppercase;">Security Shift Report</h1>
+              <p style="margin: 5px 0 0 0; font-size: 14px; color: #555; font-weight: normal;">Detailed documentation of security observations and incidents</p>
+            </div>
+            <div style="margin-right: 20px; text-align: right;">
+              <div style="font-size: 14px; color: #5d6d7e; margin-bottom: 5px;"><strong>DATE:</strong> ${formattedDate}</div>
+              <div style="font-size: 14px; color: #5d6d7e;"><strong>REF:</strong> ${reportRef}</div>
             </div>
           </div>
 
-          ${report.cctv_status === 'not-supervised' 
-            ? `<div style="margin-top: 5px; margin-left: 30px;">
-                <div style="font-size: 14px; font-weight: bold; color: #5d6d7e;">Issues:</div>
-                <div style="font-size: 14px; color: #2c3e50; margin-top: 5px;">
-                  ${report.cctv_supervision_reason === 'staff-shortage' ? 'Staff Shortage' :
-                    report.cctv_supervision_reason === 'emergency-elsewhere' ? 'Handling Emergency Elsewhere' :
-                    report.cctv_supervision_reason === 'no-access' ? 'No Access to CCTV Room' :
-                    report.cctv_supervision_reason === 'other' ? 'Other: ' + (report.cctv_supervision_other_reason || '') :
-                    report.cctv_supervision_reason || 'Not specified'}
+          <!-- Basic Info Grid -->
+          <div style="padding: 20px; padding-left: 35px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px;">
+              <!-- Column 1: Location -->
+              <div style="border: 1px solid #e0e0e0;">
+                <div style="background-color: #f9f9f9; padding: 8px 10px; font-size: 12px; color: #5d6d7e; font-weight: bold;">LOCATION</div>
+                <div style="padding: 10px; font-size: 16px; color: #2c3e50;">${report.location || 'Not specified'}</div>
+              </div>
+              
+              <!-- Column 2: Shift Type -->
+              <div style="border: 1px solid #e0e0e0;">
+                <div style="background-color: #f9f9f9; padding: 8px 10px; font-size: 12px; color: #5d6d7e; font-weight: bold;">SHIFT TYPE</div>
+                <div style="padding: 10px; font-size: 16px; color: #2c3e50;">${report.shift_type?.toUpperCase() || 'Not specified'}</div>
+              </div>
+              
+              <!-- Column 3: Submitted By -->
+              <div style="border: 1px solid #e0e0e0;">
+                <div style="background-color: #f9f9f9; padding: 8px 10px; font-size: 12px; color: #5d6d7e; font-weight: bold;">SUBMITTED BY</div>
+                <div style="padding: 10px; font-size: 16px; color: #2c3e50;">${report.submitted_by || 'Unknown'}</div>
+              </div>
+              
+              <!-- Column 4: Shift Time -->
+              <div style="border: 1px solid #e0e0e0;">
+                <div style="background-color: #f9f9f9; padding: 8px 10px; font-size: 12px; color: #5d6d7e; font-weight: bold;">SHIFT TIME</div>
+                <div style="padding: 10px; font-size: 16px; color: #2c3e50;">${
+                  (report.shift_start_time && report.shift_end_time) 
+                  ? `${new Date(report.shift_start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${new Date(report.shift_end_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`
+                  : "Not specified"
+                }</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Security Personnel Section -->
+          <div style="padding: 0 20px 20px 35px;">
+            <h2 style="font-size: 18px; color: #2c3e50; margin: 10px 0; text-transform: uppercase; font-weight: bold;">Security Personnel</h2>
+            
+            <!-- Team Member Table -->
+            <table style="width: 100%; border-collapse: collapse; background-color: #fff;">
+              <thead>
+                <tr style="background-color: #f3f6f9;">
+                  <th style="padding: 10px; text-align: left; font-size: 14px; font-weight: bold; color: #5d6d7e; border: 1px solid #e0e0e0;">NAME</th>
+                  <th style="padding: 10px; text-align: left; font-size: 14px; font-weight: bold; color: #5d6d7e; border: 1px solid #e0e0e0;">ID NUMBER</th>
+                  <th style="padding: 10px; text-align: left; font-size: 14px; font-weight: bold; color: #5d6d7e; border: 1px solid #e0e0e0;">POSITION</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${report.team_members && report.team_members.length > 0 
+                  ? report.team_members.map((member, index) => `
+                      <tr>
+                        <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;">${member.name}</td>
+                        <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;">${member.id}</td>
+                        <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;">Security Officer</td>
+                      </tr>
+                    `).join('') 
+                  : `
+                      <tr>
+                        <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;">No team members recorded</td>
+                        <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;"></td>
+                        <td style="padding: 10px; font-size: 14px; color: #2c3e50; border: 1px solid #e0e0e0;"></td>
+                      </tr>
+                    `
+                }
+                ${report.team_members && report.team_members.length > 3 
+                  ? `<tr><td colspan="3" style="text-align: right; padding: 5px 10px; font-size: 12px; color: #5d6d7e; font-style: italic; border: 1px solid #e0e0e0;">+${report.team_members.length - 3} more team members</td></tr>` 
+                  : ''
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- CCTV Monitoring Section -->
+          <div style="padding: 10px 20px 20px 35px; border-top: 1px solid #e0e0e0;">
+            <h2 style="font-size: 18px; color: #2c3e50; margin: 10px 0; text-transform: uppercase; font-weight: bold;">CCTV Monitoring</h2>
+            
+            <div style="display: flex; margin-bottom: 10px;">
+              <!-- CCTV Status -->
+              <div style="display: flex; align-items: center;">
+                <!-- Status indicator -->
+                <div style="width: 20px; height: 20px; border-radius: 50%; margin-right: 10px; background-color: ${
+                  report.cctv_status === 'fully-functional' ? '#4caf50' : 
+                  report.cctv_status === 'partial-issue' ? '#ff9800' : 
+                  report.cctv_status === 'not-working' ? '#f44336' :
+                  report.cctv_status === 'not-supervised' ? '#2196f3' : '#607d8b'
+                };"></div>
+                
+                <!-- Status text -->
+                <div style="font-size: 16px; font-weight: bold; color: #2c3e50;">Status: ${
+                  report.cctv_status === 'fully-functional' ? 'Fully Functional' : 
+                  report.cctv_status === 'partial-issue' ? 'Partial Issue' : 
+                  report.cctv_status === 'not-working' ? 'Not Working' :
+                  report.cctv_status === 'not-supervised' ? 'Not Supervised' : 'Unknown'
+                }</div>
+              </div>
+            </div>
+
+            ${report.cctv_status === 'not-supervised' 
+              ? `<div style="margin-top: 5px; margin-left: 30px;">
+                  <div style="font-size: 14px; font-weight: bold; color: #5d6d7e;">Issues:</div>
+                  <div style="font-size: 14px; color: #2c3e50; margin-top: 5px;">
+                    ${report.cctv_supervision_reason === 'staff-shortage' ? 'Staff Shortage' :
+                      report.cctv_supervision_reason === 'emergency-elsewhere' ? 'Handling Emergency Elsewhere' :
+                      report.cctv_supervision_reason === 'no-access' ? 'No Access to CCTV Room' :
+                      report.cctv_supervision_reason === 'other' ? 'Other: ' + (report.cctv_supervision_other_reason || '') :
+                      report.cctv_supervision_reason || 'Not specified'}
+                  </div>
+                </div>`
+              : report.cctv_issues
+              ? `<div style="margin-top: 5px; margin-left: 30px;">
+                  <div style="font-size: 14px; font-weight: bold; color: #5d6d7e;">Issues:</div>
+                  <div style="font-size: 14px; color: #2c3e50; margin-top: 5px;">${report.cctv_issues}</div>
+                </div>`
+              : ''
+            }
+          </div>
+
+          <!-- Utility Status Section -->
+          <div style="padding: 10px 20px 20px 35px; border-top: 1px solid #e0e0e0;">
+            <h2 style="font-size: 18px; color: #2c3e50; margin: 10px 0; text-transform: uppercase; font-weight: bold;">Utility Status</h2>
+            
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; margin-bottom: 10px;">
+              <!-- Electricity -->
+              <div style="display: flex; flex-direction: column; align-items: flex-start; width: 22%; margin-bottom: 15px;">
+                <div style="font-weight: bold; font-size: 14px; color: #2c3e50; margin-bottom: 5px;">ELECTRICITY</div>
+                <div style="display: flex; align-items: center;">
+                  <div style="width: 16px; height: 16px; border-radius: 50%; background-color: ${
+                    report.electricity_status === 'normal' ? '#4caf50' : 
+                    report.electricity_status === 'issues' ? '#ff9800' : '#f44336'
+                  }; margin-right: 10px;"></div>
+                  <div style="font-size: 14px; color: ${
+                    report.electricity_status === 'normal' ? '#4caf50' : 
+                    report.electricity_status === 'issues' ? '#ff9800' : '#f44336'
+                  };">${report.electricity_status || 'Unknown'}</div>
                 </div>
-              </div>`
-            : report.cctv_issues
-            ? `<div style="margin-top: 5px; margin-left: 30px;">
-                <div style="font-size: 14px; font-weight: bold; color: #5d6d7e;">Issues:</div>
-                <div style="font-size: 14px; color: #2c3e50; margin-top: 5px;">${report.cctv_issues}</div>
+              </div>
+              
+              <!-- Water -->
+              <div style="display: flex; flex-direction: column; align-items: flex-start; width: 22%; margin-bottom: 15px;">
+                <div style="font-weight: bold; font-size: 14px; color: #2c3e50; margin-bottom: 5px;">WATER</div>
+                <div style="display: flex; align-items: center;">
+                  <div style="width: 16px; height: 16px; border-radius: 50%; background-color: ${
+                    report.water_status === 'normal' ? '#4caf50' : 
+                    report.water_status === 'issues' ? '#ff9800' : '#f44336'
+                  }; margin-right: 10px;"></div>
+                  <div style="font-size: 14px; color: ${
+                    report.water_status === 'normal' ? '#4caf50' : 
+                    report.water_status === 'issues' ? '#ff9800' : '#f44336'
+                  };">${report.water_status || 'Unknown'}</div>
+                </div>
+              </div>
+              
+              <!-- Office -->
+              <div style="display: flex; flex-direction: column; align-items: flex-start; width: 22%; margin-bottom: 15px;">
+                <div style="font-weight: bold; font-size: 14px; color: #2c3e50; margin-bottom: 5px;">OFFICE</div>
+                <div style="display: flex; align-items: center;">
+                  <div style="width: 16px; height: 16px; border-radius: 50%; background-color: ${
+                    report.office_status === 'normal' ? '#4caf50' : 
+                    report.office_status === 'issues' ? '#ff9800' : '#f44336'
+                  }; margin-right: 10px;"></div>
+                  <div style="font-size: 14px; color: ${
+                    report.office_status === 'normal' ? '#4caf50' : 
+                    report.office_status === 'issues' ? '#ff9800' : '#f44336'
+                  };">${report.office_status || 'Unknown'}</div>
+                </div>
+              </div>
+              
+              <!-- Parking -->
+              <div style="display: flex; flex-direction: column; align-items: flex-start; width: 22%; margin-bottom: 15px;">
+                <div style="font-weight: bold; font-size: 14px; color: #2c3e50; margin-bottom: 5px;">PARKING</div>
+                <div style="display: flex; align-items: center;">
+                  <div style="width: 16px; height: 16px; border-radius: 50%; background-color: ${
+                    report.parking_status === 'normal' ? '#4caf50' : 
+                    report.parking_status === 'issues' ? '#ff9800' : '#f44336'
+                  }; margin-right: 10px;"></div>
+                  <div style="font-size: 14px; color: ${
+                    report.parking_status === 'normal' ? '#4caf50' : 
+                    report.parking_status === 'issues' ? '#ff9800' : '#f44336'
+                  };">${report.parking_status || 'Unknown'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Incident Report Section -->
+          <div style="padding: 10px 20px 20px 35px; border-top: 1px solid #e0e0e0;">
+            <h2 style="font-size: 18px; color: #2c3e50; margin: 10px 0; text-transform: uppercase; font-weight: bold;">Incident Report</h2>
+            
+            ${report.incident_occurred 
+              ? `<div style="margin-bottom: 15px;">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <!-- Incident Type -->
+                    <div style="border: 1px solid #e0e0e0; padding: 10px;">
+                      <div style="font-size: 14px; font-weight: bold; color: #5d6d7e; margin-bottom: 5px;">INCIDENT TYPE</div>
+                      <div style="font-size: 16px; color: #e74c3c;">${report.incident_type}</div>
+                    </div>
+                    
+                    <!-- Incident Time -->
+                    <div style="border: 1px solid #e0e0e0; padding: 10px;">
+                      <div style="font-size: 14px; font-weight: bold; color: #5d6d7e; margin-bottom: 5px;">INCIDENT TIME</div>
+                      <div style="font-size: 16px; color: #2c3e50;">${report.incident_time ? new Date(report.incident_time).toLocaleString() : 'Not specified'}</div>
+                    </div>
+                  </div>
+                  
+                  <!-- Incident Location -->
+                  <div style="border: 1px solid #e0e0e0; padding: 10px; margin-bottom: 15px;">
+                    <div style="font-size: 14px; font-weight: bold; color: #5d6d7e; margin-bottom: 5px;">INCIDENT LOCATION</div>
+                    <div style="font-size: 16px; color: #2c3e50;">${report.incident_location}</div>
+                  </div>
+                  
+                  <!-- Description -->
+                  <div style="border: 1px solid #e0e0e0; padding: 10px; margin-bottom: 15px;">
+                    <div style="font-size: 14px; font-weight: bold; color: #5d6d7e; margin-bottom: 5px;">DESCRIPTION</div>
+                    <div style="font-size: 14px; color: #2c3e50; line-height: 1.4;">${report.incident_description}</div>
+                  </div>
+                  
+                  <!-- Action Taken -->
+                  <div style="border: 1px solid #e0e0e0; padding: 10px;">
+                    <div style="font-size: 14px; font-weight: bold; color: #5d6d7e; margin-bottom: 5px;">ACTION TAKEN</div>
+                    <div style="font-size: 14px; color: #2c3e50; line-height: 1.4;">${report.action_taken}</div>
+                  </div>
+                </div>`
+              : `<div style="padding: 15px 0;">
+                  <p style="font-size: 16px; color: #2c3e50; margin: 0;">No incidents reported during this shift.</p>
+                </div>`
+            }
+          </div>
+
+          <!-- Notes Section (if available) -->
+          ${report.notes 
+            ? `<div style="padding: 10px 20px 20px 35px; border-top: 1px solid #e0e0e0;">
+                <h2 style="font-size: 18px; color: #2c3e50; margin: 10px 0; text-transform: uppercase; font-weight: bold;">Notes</h2>
+                <div style="border: 1px solid #e0e0e0; padding: 15px; font-size: 14px; color: #2c3e50; line-height: 1.5;">
+                  ${report.notes}
+                </div>
               </div>`
             : ''
           }
-        </div>
 
-        <!-- Utility Status Section -->
-        <div style="position: absolute; left: 58px; top: 420px; right: 20px; border-bottom: 1px solid #e0e0e0;">
-          <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; font-weight: bold;">Utility Status</h2>
-          
-          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-            <!-- Electricity -->
-            <div style="display: flex; flex-direction: column; align-items: flex-start; width: 22%;">
-              <div style="font-weight: bold; font-size: 14px; color: #2c3e50; margin-bottom: 5px;">ELECTRICITY</div>
-              <div style="display: flex; align-items: center;">
-                <div style="width: 16px; height: 16px; border-radius: 50%; background-color: ${
-                  report.electricity_status === 'normal' ? '#4caf50' : 
-                  report.electricity_status === 'issues' ? '#ff9800' : '#f44336'
-                }; margin-right: 10px;"></div>
-                <div style="font-size: 14px; color: ${
-                  report.electricity_status === 'normal' ? '#4caf50' : 
-                  report.electricity_status === 'issues' ? '#ff9800' : '#f44336'
-                };">${report.electricity_status || 'Unknown'}</div>
-              </div>
-            </div>
-            
-            <!-- Water -->
-            <div style="display: flex; flex-direction: column; align-items: flex-start; width: 22%;">
-              <div style="font-weight: bold; font-size: 14px; color: #2c3e50; margin-bottom: 5px;">WATER</div>
-              <div style="display: flex; align-items: center;">
-                <div style="width: 16px; height: 16px; border-radius: 50%; background-color: ${
-                  report.water_status === 'normal' ? '#4caf50' : 
-                  report.water_status === 'issues' ? '#ff9800' : '#f44336'
-                }; margin-right: 10px;"></div>
-                <div style="font-size: 14px; color: ${
-                  report.water_status === 'normal' ? '#4caf50' : 
-                  report.water_status === 'issues' ? '#ff9800' : '#f44336'
-                };">${report.water_status || 'Unknown'}</div>
-              </div>
-            </div>
-            
-            <!-- Office -->
-            <div style="display: flex; flex-direction: column; align-items: flex-start; width: 22%;">
-              <div style="font-weight: bold; font-size: 14px; color: #2c3e50; margin-bottom: 5px;">OFFICE</div>
-              <div style="display: flex; align-items: center;">
-                <div style="width: 16px; height: 16px; border-radius: 50%; background-color: ${
-                  report.office_status === 'normal' ? '#4caf50' : 
-                  report.office_status === 'issues' ? '#ff9800' : '#f44336'
-                }; margin-right: 10px;"></div>
-                <div style="font-size: 14px; color: ${
-                  report.office_status === 'normal' ? '#4caf50' : 
-                  report.office_status === 'issues' ? '#ff9800' : '#f44336'
-                };">${report.office_status || 'Unknown'}</div>
-              </div>
-            </div>
-            
-            <!-- Parking -->
-            <div style="display: flex; flex-direction: column; align-items: flex-start; width: 22%;">
-              <div style="font-weight: bold; font-size: 14px; color: #2c3e50; margin-bottom: 5px;">PARKING</div>
-              <div style="display: flex; align-items: center;">
-                <div style="width: 16px; height: 16px; border-radius: 50%; background-color: ${
-                  report.parking_status === 'normal' ? '#4caf50' : 
-                  report.parking_status === 'issues' ? '#ff9800' : '#f44336'
-                }; margin-right: 10px;"></div>
-                <div style="font-size: 14px; color: ${
-                  report.parking_status === 'normal' ? '#4caf50' : 
-                  report.parking_status === 'issues' ? '#ff9800' : '#f44336'
-                };">${report.parking_status || 'Unknown'}</div>
-              </div>
-            </div>
+          <!-- Footer -->
+          <div style="margin-top: auto; padding: 10px 0; border-top: 1px solid #e0e0e0; text-align: center;">
+            <div style="font-size: 12px; color: #7f8c8d;">Generated on ${new Date().toLocaleString()} • Security Operations Department</div>
+            <div style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">CONFIDENTIAL • Page 1 of 1</div>
           </div>
-        </div>
-
-        <!-- Incident Report Section -->
-        <div style="position: absolute; left: 58px; top: 500px; right: 20px; padding-top: 10px; border-bottom: 1px solid #e0e0e0;">
-          <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; font-weight: bold;">Incident Report</h2>
-          
-          ${report.incident_occurred 
-            ? `<div style="margin-bottom: 15px;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                  <!-- Incident Type -->
-                  <div style="border: 1px solid #e0e0e0; padding: 10px;">
-                    <div style="font-size: 14px; font-weight: bold; color: #5d6d7e; margin-bottom: 5px;">INCIDENT TYPE</div>
-                    <div style="font-size: 16px; color: #e74c3c;">${report.incident_type}</div>
-                  </div>
-                  
-                  <!-- Incident Time -->
-                  <div style="border: 1px solid #e0e0e0; padding: 10px;">
-                    <div style="font-size: 14px; font-weight: bold; color: #5d6d7e; margin-bottom: 5px;">INCIDENT TIME</div>
-                    <div style="font-size: 16px; color: #2c3e50;">${report.incident_time ? new Date(report.incident_time).toLocaleString() : 'Not specified'}</div>
-                  </div>
-                </div>
-                
-                <!-- Incident Location -->
-                <div style="border: 1px solid #e0e0e0; padding: 10px; margin-bottom: 15px;">
-                  <div style="font-size: 14px; font-weight: bold; color: #5d6d7e; margin-bottom: 5px;">INCIDENT LOCATION</div>
-                  <div style="font-size: 16px; color: #2c3e50;">${report.incident_location}</div>
-                </div>
-                
-                <!-- Description -->
-                <div style="border: 1px solid #e0e0e0; padding: 10px; margin-bottom: 15px;">
-                  <div style="font-size: 14px; font-weight: bold; color: #5d6d7e; margin-bottom: 5px;">DESCRIPTION</div>
-                  <div style="font-size: 14px; color: #2c3e50; line-height: 1.4;">${report.incident_description}</div>
-                </div>
-                
-                <!-- Action Taken -->
-                <div style="border: 1px solid #e0e0e0; padding: 10px;">
-                  <div style="font-size: 14px; font-weight: bold; color: #5d6d7e; margin-bottom: 5px;">ACTION TAKEN</div>
-                  <div style="font-size: 14px; color: #2c3e50; line-height: 1.4;">${report.action_taken}</div>
-                </div>
-              </div>`
-            : `<div style="padding: 15px 0;">
-                <p style="font-size: 16px; color: #2c3e50; margin: 0;">No incidents reported during this shift.</p>
-              </div>`
-          }
-        </div>
-
-        <!-- Notes Section (if available) -->
-        ${report.notes 
-          ? `<div style="position: absolute; left: 58px; top: ${report.incident_occurred ? '750' : '570'}px; right: 20px; padding-top: 10px;">
-              <h2 style="font-size: 18px; color: #2c3e50; margin: 0 0 10px 0; text-transform: uppercase; font-weight: bold;">Notes</h2>
-              <div style="border: 1px solid #e0e0e0; padding: 15px; font-size: 14px; color: #2c3e50; line-height: 1.5;">
-                ${report.notes}
-              </div>
-            </div>`
-          : ''
-        }
-
-        <!-- Footer -->
-        <div style="position: absolute; left: 0; bottom: 10px; width: 100%; text-align: center; padding: 10px 0; border-top: 1px solid #e0e0e0;">
-          <div style="font-size: 12px; color: #7f8c8d;">Generated on ${new Date().toLocaleString()} • Security Operations Department</div>
-          <div style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">CONFIDENTIAL • Page 1 of 1</div>
         </div>
       </div>
     `;
 
-    // Convert to PDF
-    const canvas = await html2canvas(tempContainer, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#ffffff'
-    });
+    // Generate PDF with multiple pages if needed
+    const generatePDF = async () => {
+      // Create a PDF with A4 dimensions
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const contentDiv = tempContainer.firstChild;
+      
+      // Get the actual height of the rendered content
+      const contentHeight = contentDiv.offsetHeight;
+      const pdfWidth = 210; // A4 width in mm
+      const pdfHeight = 297; // A4 height in mm
+      
+      // Calculate scaling factor to fit width
+      const scale = pdfWidth / 800; // 800px is your div width
+      
+      // Calculate how many pages we'll need
+      const totalPages = Math.ceil((contentHeight * scale) / pdfHeight);
+      
+      // For each page
+      for (let i = 0; i < totalPages; i++) {
+        // Create a canvas for the current page
+        const canvas = await html2canvas(contentDiv, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          y: i * (pdfHeight / scale), // Offset to capture the right part of the page
+          height: pdfHeight / scale // Capture just one page height
+        });
+        
+        // Add new page if not the first page
+        if (i > 0) {
+          pdf.addPage();
+        }
+        
+        // Add image to current page
+        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, (canvas.height * pdfWidth) / canvas.width);
+      }
+      
+      return pdf;
+    };
 
-    const imgWidth = 210;
-    const pageHeight = 297;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdf = await generatePDF();
     
-    // Add image to PDF - single page only
-    pdf.addImage(canvas.toDataURL('image/jpeg', 1.0), 'JPEG', 0, 0, imgWidth, imgHeight);
-
     // Save PDF with a cleaner filename
     pdf.save(`Security_Report_${report.location ? report.location.replace(/\s+/g, '_') : 'Location'}_${formattedDate.replace(/\//g, '-')}.pdf`);
 
