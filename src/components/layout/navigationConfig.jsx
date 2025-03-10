@@ -8,11 +8,6 @@ export const roleBasedNavigation = {
       icon: LayoutDashboard 
     },
     { 
-      name: 'Guard Shift Report', 
-      path: '/GuardShiftForm', 
-      icon: ClipboardList
-    },
-    { 
       name: 'User Management', 
       path: '/user-management', 
       icon: Users2 
@@ -39,7 +34,6 @@ export const roleBasedNavigation = {
       icon: BarChart,
       children: [
         { name: 'Check In & Out Report', path: '/reports', icon: BarChart },
-        { name: 'Guard Shift Report', path: '/GuardShiftReportViewer', icon: BarChart },
         { name: 'Scheduled Visitor Report', path: '/scheduled-report', icon: BarChart },
       ]
     },
@@ -80,7 +74,6 @@ export const roleBasedNavigation = {
       icon: BarChart,
       children: [
         { name: 'Check In & Out Report', path: '/reports', icon: BarChart },
-        { name: 'Guard Shift Report', path: '/GuardShiftReportViewer', icon: BarChart },
         { name: 'Scheduled Visitor Report', path: '/scheduled-report', icon: BarChart },
       ]
     },
@@ -90,11 +83,6 @@ export const roleBasedNavigation = {
       name: 'Dashboard', 
       path: '/supervisordashboard', 
       icon: LayoutDashboard 
-    },
-    { 
-      name: 'Guard Shift Report', 
-      path: '/GuardShiftForm', 
-      icon: ClipboardList
     },
     {
       name: 'Visitor Management',
@@ -161,7 +149,6 @@ export const roleBasedNavigation = {
       icon: BarChart,
       children: [
         { name: 'Check In & Out Report', path: '/reports', icon: BarChart },
-        { name: 'Guard Shift Report', path: '/GuardShiftReportViewer', icon: BarChart },
         { name: 'Scheduled Visitor Report', path: '/scheduled-report', icon: BarChart },
       ]
     },
