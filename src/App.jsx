@@ -93,7 +93,7 @@ const App = () => {
       <Route path="/visitor-history/form" element={<ProtectedRoute requiredRoles={['admin', 'supervisor', 'manager', 'user', 'security_guard']}><AuthenticatedLayout><VisitorDetailsModal /></AuthenticatedLayout></ProtectedRoute>} />
 
       {/* Bulk visitors route */}
-      <Route path="/bulkvisitors" element={<ProtectedRoute requiredRoles={['admin']}><AuthenticatedLayout><BulkVisitorUpload /></AuthenticatedLayout></ProtectedRoute>} />
+      <Route path="/bulkvisitors" element={<ProtectedRoute requiredRoles={['admin', 'user', 'manager']}><AuthenticatedLayout><BulkVisitorUpload /></AuthenticatedLayout></ProtectedRoute>} />
 
       {/* Scheduled visitors route */}
       <Route path="/scheduled-visitors" element={<ProtectedRoute requiredRoles={['admin', 'user', 'manager','supervisor']}><AuthenticatedLayout><ActiveScheduledVisitors /></AuthenticatedLayout></ProtectedRoute>} />
