@@ -96,7 +96,7 @@ const App = () => {
       <Route path="/bulkvisitors" element={<ProtectedRoute requiredRoles={['admin', 'user', 'manager']}><AuthenticatedLayout><BulkVisitorUpload /></AuthenticatedLayout></ProtectedRoute>} />
 
       {/* Scheduled visitors route */}
-      <Route path="/scheduled-visitors" element={<ProtectedRoute requiredRoles={['admin', 'user', 'manager','supervisor']}><AuthenticatedLayout><ActiveScheduledVisitors /></AuthenticatedLayout></ProtectedRoute>} />
+      <Route path="/scheduled-visitors" element={<ProtectedRoute requiredRoles={['admin', 'user', 'manager','supervisor', 'security_guard']}><AuthenticatedLayout><ActiveScheduledVisitors /></AuthenticatedLayout></ProtectedRoute>} />
 
       {/* User Management route */}
       <Route path="/user-management" element={<ProtectedRoute requiredRoles={['admin']}><AuthenticatedLayout><UserManagement /></AuthenticatedLayout></ProtectedRoute>} />
