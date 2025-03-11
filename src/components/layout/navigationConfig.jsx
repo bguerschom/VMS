@@ -131,9 +131,7 @@ export const roleBasedNavigation = {
       name: 'Visitor Management',
       icon: Users,
       children: [
-        { name: 'Check In', path: '/check-in', icon: LogIn },
-        { name: 'Check Out', path: '/check-out', icon: LogOut },
-        { name: 'Visitor History', path: '/visitor-history', icon: History },
+        { name: 'Visitor History', path: '/visitor-history', icon: History }
       ]
     },
     {
