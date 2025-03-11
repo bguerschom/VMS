@@ -49,7 +49,7 @@ const SearchVisitor = () => {
     e.preventDefault();
     
     if (searchInput.trim() === '') {
-      setError('Please enter an ID, Phone number, or # for Passport');
+      setError('Please enter an ID, Phone number, or #00 for Passport');
       return;
     }
 
@@ -135,7 +135,7 @@ const SearchVisitor = () => {
                   transition-all duration-300
                   hover:shadow-2xl
                   placeholder-gray-500 dark:placeholder-gray-400"
-                placeholder="Enter ID, Phone Number, or # for Passport"
+                placeholder="Enter ID, Phone Number, or #00 for Passport"
                 value={searchInput}
                 onChange={handleInputChange}
                 disabled={isLoading}
