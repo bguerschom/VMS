@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { visitorService } from '../../services/visitorService';
@@ -12,31 +12,15 @@ const SearchVisitor = () => {
   const inputRef = useRef(null);
   const navigate = useNavigate();
 
-  // Handle special case when # is typed
-  useEffect(() => {
-    if (searchInput === '#') {
-      // Automatically append "00" to "#" to create "#00"
-      setSearchInput('#00');
-    }
-  }, [searchInput]);
-
   const handleInputChange = (e) => {
     let value = e.target.value;
     
-    // Handle # character (for passport mode)
-    if (value === '#') {
-      value = '#';
-    }
-    // Handle passport mode case "#00"
-    else if (value.startsWith('#')) {
-      value = value.slice(0, 3); // Only allow "#00"
-    }
     // Handle phone number starting with 250
-    else if (value.startsWith('250')) {
+    if (value.startsWith('250')) {
       value = value.slice(0, 12);
     } 
     // Handle ID number
-    else {
+    else if (value !== '#00') {
       value = value.slice(0, 16); 
     }
 
@@ -45,11 +29,11 @@ const SearchVisitor = () => {
     setShowAlert(false);
   };
 
-  const handleSearch = async (e) => {
+const handleSearch = async (e) => {
     e.preventDefault();
     
     if (searchInput.trim() === '') {
-      setError('Please enter an ID, Phone number, or #00 for Passport');
+      setError('Please enter an ID or Phone number');
       return;
     }
 
@@ -71,7 +55,7 @@ const SearchVisitor = () => {
       // Validate input format
       if (searchInput.startsWith('250') && searchInput.length !== 12) {
         throw new Error('Phone number must be 12 digits including 250');
-      } else if (!searchInput.startsWith('250') && !searchInput.startsWith('#') && searchInput.length !== 16) {
+      } else if (!searchInput.startsWith('250') && searchInput.length !== 16) {
         throw new Error('ID number must be 16 digits');
       }
 
@@ -135,6 +119,7 @@ const SearchVisitor = () => {
                   transition-all duration-300
                   hover:shadow-2xl
                   placeholder-gray-500 dark:placeholder-gray-400"
+                placeholder="Enter ID or Phone Number"
                 value={searchInput}
                 onChange={handleInputChange}
                 disabled={isLoading}
