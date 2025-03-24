@@ -135,7 +135,6 @@ const SearchVisitor = () => {
                   transition-all duration-300
                   hover:shadow-2xl
                   placeholder-gray-500 dark:placeholder-gray-400"
-                placeholder="Enter ID, Phone Number, or #00 for Passport"
                 value={searchInput}
                 onChange={handleInputChange}
                 disabled={isLoading}
@@ -204,7 +203,7 @@ const SearchVisitor = () => {
                 </p>
                 <p className="flex items-center">
                   <span className="mr-2 text-black dark:text-white">•</span> 
-                  For Passport users: Type # and the system will automatically enter Passport mode
+                  For Passport users: #00
                 </p>
               </div>
             </motion.div>
