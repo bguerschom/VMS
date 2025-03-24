@@ -119,7 +119,7 @@ const handleSearch = async (e) => {
                   transition-all duration-300
                   hover:shadow-2xl
                   placeholder-gray-500 dark:placeholder-gray-400"
-                placeholder="Enter ID or Phone Number"
+                
                 value={searchInput}
                 onChange={handleInputChange}
                 disabled={isLoading}
